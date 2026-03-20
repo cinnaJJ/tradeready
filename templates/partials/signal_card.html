@@ -1,0 +1,83 @@
+{% set sym = (coin.symbol or '')|upper %}
+{% set tv_url = 'https://www.tradingview.com/chart/?symbol=' + sym + 'USDT' %}
+<a href="{{ tv_url }}" target="_blank" rel="noopener" class="coin-card-link text-decoration-none">
+  <div class="signal-card h-100 signal-{{ coin.signal_color }}">
+
+    <!-- HEADER -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+      {% if coin.image or coin.thumb %}
+      <img src="{{ coin.image or coin.thumb }}" alt="{{ coin.name }}" class="coin-logo" loading="lazy"/>
+      {% else %}
+      <div class="coin-logo-placeholder">{{ (coin.symbol or '?')[0] }}</div>
+      {% endif %}
+      <div class="flex-grow-1">
+        <div class="coin-name">{{ coin.name }}</div>
+        <div class="coin-symbol">{{ sym }}</div>
+      </div>
+      <div class="score-badge score-{{ coin.signal_color }}">
+        {{ coin.signal_icon }} {{ coin.signal_score }}/10
+      </div>
+    </div>
+
+    <!-- PRICE + CHANGE -->
+    <div class="d-flex align-items-baseline gap-3 mb-2">
+      <div class="coin-price" data-price-id="{{ coin.id }}">
+        {{ format_currency(coin.current_price or coin.price) }}
+      </div>
+      {% set change = coin.price_change_percentage_24h or coin.change %}
+      <div class="coin-change {{ 'positive' if (change or 0) >= 0 else 'negative' }}"
+           data-change-id="{{ coin.id }}">
+        {{ format_percentage(change) }}
+      </div>
+    </div>
+
+    <!-- VERDICT -->
+    <div class="verdict-badge verdict-{{ coin.signal_color }} mb-3">
+      {{ coin.signal_verdict }}
+    </div>
+
+    <!-- SIGNAL TAGS -->
+    <div class="signal-tags mb-3">
+      {% for sig in coin.signal_details[:3] %}
+      <span class="signal-tag bullish">{{ sig.icon }} {{ sig.label }}</span>
+      {% endfor %}
+      {% for warn in coin.signal_warnings[:2] %}
+      <span class="signal-tag bearish">{{ warn.icon }} {{ warn.label }}</span>
+      {% endfor %}
+    </div>
+
+    <!-- KEY STATS GRID -->
+    <div class="signal-stats-grid">
+      <div class="signal-stat">
+        <span class="signal-stat-label">RSI</span>
+        <span class="signal-stat-value
+          {% if coin.signal_rsi and coin.signal_rsi <= 30 %}positive
+          {% elif coin.signal_rsi and coin.signal_rsi >= 70 %}negative
+          {% else %}accent{% endif %}">
+          {{ coin.signal_rsi or 'N/A' }}
+          {% if coin.signal_rsi_source == 'Binance (real)' %}
+          <span style="font-size:0.55rem;color:var(--green)">✓</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="signal-stat">
+        <span class="signal-stat-label">7d</span>
+        <span class="signal-stat-value {{ 'positive' if (coin.price_change_percentage_7d_in_currency or 0) >= 0 else 'negative' }}">
+          {{ format_percentage(coin.price_change_percentage_7d_in_currency) }}
+        </span>
+      </div>
+      <div class="signal-stat">
+        <span class="signal-stat-label">Mkt Cap</span>
+        <span class="signal-stat-value">{{ format_currency(coin.market_cap) }}</span>
+      </div>
+      <div class="signal-stat">
+        <span class="signal-stat-label">Volume</span>
+        <span class="signal-stat-value">{{ format_currency(coin.total_volume) }}</span>
+      </div>
+    </div>
+
+    <div style="font-size:0.58rem;color:var(--muted);margin-top:10px">
+      <i class="bi bi-graph-up me-1"></i>Opens TradingView
+    </div>
+  </div>
+</a>

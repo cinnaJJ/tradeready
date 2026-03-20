@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- HERO -->
+  <div class="page-hero mb-4">
+    <h1 class="hero-title">Trading Signal Scanner</h1>
+    <p class="hero-sub">Coins scored by confluence — trend, RSI, volume, pullback. Updated every 60 seconds.</p>
+    <div class="d-flex align-items-center gap-3 mt-2 flex-wrap">
+      {% if last_updated %}<span class="last-updated">Last updated: {{ last_updated }}</span>{% endif %}
+      <button class="btn btn-sm btn-outline-secondary" id="refreshBtn" onclick="refreshData()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+      </button>
+      {% if loading %}
+      <span class="text-warning small" id="loadingMsg">
+        <span class="spinner-border spinner-border-sm me-1"></span>
+        Scanning market data — page will update automatically...
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- TOP ROW: F&G + MARKET SUMMARY -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-5">
+      {% include 'partials/fear_greed_widget.html' %}
+    </div>
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-body p-4">
+          <div class="section-label mb-3">📡 Market Snapshot</div>
+          {% if not loading and coins_summary %}
+          <div class="row g-3 text-center">
+            <div class="col-3">
+              <div class="summary-num green">{{ coins_summary.strong_buy }}</div>
+              <div class="summary-lbl">Strong Buy</div>
+            </div>
+            <div class="col-3">
+              <div class="summary-num" style="color:var(--yellow)">{{ coins_summary.buy_watch }}</div>
+              <div class="summary-lbl">Buy Watch</div>
+            </div>
+            <div class="col-3">
+              <div class="summary-num" style="color:var(--muted)">{{ coins_summary.neutral }}</div>
+              <div class="summary-lbl">Neutral</div>
+            </div>
+            <div class="col-3">
+              <div class="summary-num red">{{ coins_summary.avoid }}</div>
+              <div class="summary-lbl">Avoid</div>
+            </div>
+          </div>
+          <hr style="border-color:var(--border);margin:16px 0">
+          <div class="d-flex gap-3 flex-wrap" style="font-size:0.7rem;color:var(--muted)">
+            <span>📈 Uptrends: <strong style="color:var(--green)">{{ coins_summary.uptrends }}</strong></span>
+            <span>🎯 Pullbacks: <strong style="color:var(--accent)">{{ coins_summary.pullbacks }}</strong></span>
+            <span>🔥 Vol Spikes: <strong style="color:var(--yellow)">{{ coins_summary.vol_spikes }}</strong></span>
+            <span>📉 Oversold: <strong style="color:var(--green)">{{ coins_summary.oversold }}</strong></span>
+            <span>⚠ Overbought: <strong style="color:var(--red)">{{ coins_summary.overbought }}</strong></span>
+          </div>
+          {% else %}
+          <div class="d-flex align-items-center gap-2 text-muted small">
+            <span class="spinner-border spinner-border-sm"></span> Scanning coins...
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STRONG BUY WATCH -->
+  {% if strong_buys %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <div class="section-label green">🟢 Strong Buy Watch — Score 7.5+</div>
+      <p class="section-desc">Multiple bullish signals aligning — highest confluence setups right now</p>
+    </div>
+    <a href="/markets?filter=strong_buy" class="btn btn-sm btn-outline-primary">See all</a>
+  </div>
+  <div class="row g-3 mb-5">
+    {% for coin in strong_buys %}
+    <div class="col-12 col-md-6 col-lg-4">
+      {% with coin=coin %}{% include 'partials/signal_card.html' %}{% endwith %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- BUY WATCH -->
+  {% if buy_watches %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <div class="section-label" style="color:var(--yellow)">🟡 Buy Watch — Score 6-7.5</div>
+      <p class="section-desc">Good setups forming — confirm on chart before entering</p>
+    </div>
+    <a href="/markets?filter=buy_watch" class="btn btn-sm btn-outline-primary">See all</a>
+  </div>
+  <div class="row g-3 mb-5">
+    {% for coin in buy_watches %}
+    <div class="col-12 col-md-6 col-lg-4">
+      {% with coin=coin %}{% include 'partials/signal_card.html' %}{% endwith %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- PULLBACKS -->
+  {% if pullbacks %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <div class="section-label" style="color:var(--accent)">🎯 Pullback to Support</div>
+      <p class="section-desc">Uptrend intact but price dipped — potential buy-the-dip opportunities</p>
+    </div>
+  </div>
+  <div class="row g-3 mb-5">
+    {% for coin in pullbacks %}
+    <div class="col-12 col-md-6 col-lg-4">
+      {% with coin=coin %}{% include 'partials/signal_card.html' %}{% endwith %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- VOLUME SPIKES -->
+  {% if vol_spikes %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <div class="section-label" style="color:var(--yellow)">🔥 Volume Spikes</div>
+      <p class="section-desc">Unusual volume — real market participation, something is moving</p>
+    </div>
+  </div>
+  <div class="row g-3 mb-5">
+    {% for coin in vol_spikes %}
+    <div class="col-12 col-md-6 col-lg-4">
+      {% with coin=coin %}{% include 'partials/signal_card.html' %}{% endwith %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- OVERSOLD -->
+  {% if oversold %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <div class="section-label green">📉 RSI Oversold (Below 30)</div>
+      <p class="section-desc">Sellers may be exhausted — watch for reversal candles and volume confirmation</p>
+    </div>
+  </div>
+  <div class="row g-3 mb-5">
+    {% for coin in oversold %}
+    <div class="col-12 col-md-6 col-lg-4">
+      {% with coin=coin %}{% include 'partials/signal_card.html' %}{% endwith %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- AVOID / OVERBOUGHT -->
+  {% if overbought %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <div class="section-label red">⚠ RSI Overbought (Above 70) — Avoid</div>
+      <p class="section-desc">Buyers exhausted — high reversal risk, do not chase these</p>
+    </div>
+  </div>
+  <div class="row g-3 mb-5">
+    {% for coin in overbought %}
+    <div class="col-12 col-md-6 col-lg-4">
+      {% with coin=coin %}{% include 'partials/signal_card.html' %}{% endwith %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if loading %}
+  <div class="row g-3 mb-5">
+    {% for i in range(6) %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="coin-card loading-card" style="height:180px">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="skeleton skeleton-logo"></div>
+          <div class="flex-grow-1">
+            <div class="skeleton skeleton-text mb-1"></div>
+            <div class="skeleton skeleton-text-sm"></div>
+          </div>
+        </div>
+        <div class="skeleton skeleton-price mb-2"></div>
+        <div class="skeleton skeleton-text mb-1"></div>
+        <div class="skeleton skeleton-text-sm"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer-box">
+    <i class="bi bi-shield-exclamation me-2"></i>
+    <strong>Remember:</strong> These signals are for educational purposes only. Always confirm on TradingView before entering. 
+    Use your checklist. Set your stop loss. Risk max 2% per trade. No signal is 100% accurate.
+  </div>
+
+</div>
+{% endblock %}

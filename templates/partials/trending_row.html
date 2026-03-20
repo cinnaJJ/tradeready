@@ -1,0 +1,19 @@
+<div class="trending-scroll d-flex gap-3 pb-2">
+  {% for coin in trending %}
+  {% set data = coin.data or {} %}
+  {% set change = data.get('price_change_percentage_24h', {}).get('usd') if data else None %}
+  <a href="/coin/{{ coin.id }}" class="trending-pill text-decoration-none flex-shrink-0">
+    {% if coin.thumb %}
+    <img src="{{ coin.thumb }}" alt="{{ coin.name }}" class="trending-thumb" loading="lazy"/>
+    {% endif %}
+    <div>
+      <div class="trending-name">{{ coin.symbol }}</div>
+      {% if change is not none %}
+      <div class="trending-change {{ 'positive' if change >= 0 else 'negative' }}">
+        {{ '+' if change >= 0 else '' }}{{ "%.1f"|format(change) }}%
+      </div>
+      {% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>

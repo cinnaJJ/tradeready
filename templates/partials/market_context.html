@@ -1,0 +1,113 @@
+{% set gm  = global_metrics %}
+{% set btc = btc_data %}
+
+<div class="card h-100 market-context-card">
+  <div class="card-body p-4">
+    <div class="section-label mb-3">₿ Bitcoin & Market Context</div>
+
+    {% if btc and btc.price %}
+    <!-- BTC PRICE -->
+    <div class="btc-price-row mb-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="btc-price">${{ "{:,.0f}".format(btc.price) }}</div>
+          <div class="btc-symbol">BTC / USDT</div>
+        </div>
+        <div class="text-end">
+          <div class="{{ 'positive' if (btc.change24 or 0) >= 0 else 'negative' }} fw-bold">
+            {{ '+' if (btc.change24 or 0) >= 0 else '' }}{{ "%.2f"|format(btc.change24 or 0) }}% (24h)
+          </div>
+          <div class="{{ 'positive' if (btc.change7d or 0) >= 0 else 'negative' }}" style="font-size:0.7rem">
+            {{ '+' if (btc.change7d or 0) >= 0 else '' }}{{ "%.2f"|format(btc.change7d or 0) }}% (7d)
+          </div>
+        </div>
+      </div>
+
+      <!-- BTC MOOD -->
+      <div class="btc-mood mt-2
+        {% if btc.mood == 'bullish' %}btc-bullish
+        {% elif btc.mood == 'bearish' %}btc-bearish
+        {% elif btc.mood == 'slightly_bullish' %}btc-caution
+        {% else %}btc-caution{% endif %}">
+        {% if btc.mood == 'bullish' %}🟢
+        {% elif btc.mood == 'bearish' %}🔴
+        {% else %}🟡{% endif %}
+        {{ btc.mood_desc }}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if gm and gm.btc_dominance %}
+    <hr style="border-color:var(--border);margin:12px 0">
+
+    <!-- BTC DOMINANCE -->
+    <div class="dom-section">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span style="font-size:0.7rem;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px">BTC Dominance</span>
+        <div class="d-flex align-items-center gap-2">
+          <span class="dom-value">{{ "%.1f"|format(gm.btc_dominance) }}%</span>
+          <span class="{{ 'positive' if (gm.btc_dominance_24h or 0) >= 0 else 'negative' }}" style="font-size:0.68rem;font-family:'DM Mono',monospace">
+            {{ '+' if (gm.btc_dominance_24h or 0) >= 0 else '' }}{{ "%.2f"|format(gm.btc_dominance_24h or 0) }}%
+          </span>
+        </div>
+      </div>
+
+      <!-- DOMINANCE BAR -->
+      <div class="dom-bar-bg">
+        <div class="dom-bar-fill" style="width:{{ gm.btc_dominance }}%"></div>
+        <div class="dom-bar-label left">BTC {{ "%.0f"|format(gm.btc_dominance) }}%</div>
+        <div class="dom-bar-label right">Alts {{ "%.0f"|format(100 - gm.btc_dominance) }}%</div>
+      </div>
+
+      <!-- DOM SIGNAL -->
+      <div class="dom-signal mt-3
+        {% if gm.btc_signal == 'BTC Season' %}dom-btc
+        {% elif gm.btc_signal == 'Altcoin Season' %}dom-alt
+        {% else %}dom-neutral{% endif %}">
+        {% if gm.btc_signal == 'BTC Season' %}₿
+        {% elif gm.btc_signal == 'Altcoin Season' %}🔀
+        {% else %}↔{% endif %}
+        <strong>{{ gm.btc_signal }}</strong>
+        <div style="font-size:0.65rem;margin-top:3px;opacity:0.85">{{ gm.btc_signal_desc }}</div>
+      </div>
+
+      <!-- DOMINANCE TREND -->
+      <div class="dom-trend mt-2">
+        <span class="dom-trend-icon
+          {% if gm.dom_trend == 'rising' %}negative
+          {% elif gm.dom_trend == 'falling' %}positive
+          {% else %}text-muted{% endif %}">
+          {% if gm.dom_trend == 'rising' %}▲
+          {% elif gm.dom_trend == 'falling' %}▼
+          {% else %}→{% endif %}
+        </span>
+        <span>{{ gm.dom_desc }}</span>
+      </div>
+    </div>
+
+    <hr style="border-color:var(--border);margin:12px 0">
+
+    <!-- TOTAL MARKET CAP -->
+    <div class="d-flex justify-content-between align-items-center">
+      <span style="font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:1px">Total Mkt Cap</span>
+      <div class="text-end">
+        <span style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--fg);font-weight:700">
+          {{ format_currency(gm.total_market_cap) }}
+        </span>
+        {% if gm.market_cap_change %}
+        <span class="{{ 'positive' if (gm.market_cap_change or 0) >= 0 else 'negative' }}" style="font-size:0.65rem;margin-left:6px">
+          {{ '+' if (gm.market_cap_change or 0) >= 0 else '' }}{{ "%.2f"|format(gm.market_cap_change) }}%
+        </span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if not btc or not btc.price %}
+    <div class="d-flex align-items-center gap-2 text-muted small">
+      <span class="spinner-border spinner-border-sm"></span> Loading market data...
+    </div>
+    {% endif %}
+
+  </div>
+</div>

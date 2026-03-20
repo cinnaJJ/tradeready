@@ -1,0 +1,770 @@
+/* TradeReady — Custom Stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap');
+
+:root {
+  --bg:       #07090f;
+  --surface:  #0d1117;
+  --card:     #111720;
+  --card2:    #161f2e;
+  --border:   #1c2a3a;
+  --green:    #0dff8c;
+  --red:      #ff3a5c;
+  --yellow:   #ffc832;
+  --orange:   #ff7a30;
+  --blue:     #3b8bff;
+  --text:     #c8d8e8;
+  --muted:    #3a5068;
+  --fg:       #eaf2ff;
+}
+
+/* ── BASE ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── NAV ──────────────────────────────────────────────── */
+.site-nav {
+  background: rgba(7,9,15,0.92) !important;
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 0;
+  height: 58px;
+}
+
+.navbar-brand {
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: 4px;
+  color: var(--fg) !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.nav-link { color: var(--muted) !important; font-size: 0.82rem; font-weight: 600; transition: color 0.2s; }
+.nav-link:hover, .nav-link.active { color: var(--fg) !important; }
+
+.fg-nav-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.fg-nav-badge:hover { opacity: 0.8; }
+.fg-fear         { color: #ff6b6b; border-color: #ff6b6b44; background: #ff6b6b11; }
+.fg-caution      { color: var(--yellow); border-color: #ffc83244; background: #ffc83211; }
+.fg-greed        { color: var(--orange); border-color: #ff7a3044; background: #ff7a3011; }
+.fg-extreme-greed{ color: var(--green);  border-color: #0dff8c44; background: #0dff8c11; }
+
+/* ── CARDS ────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+}
+
+.card-body { color: var(--text); }
+
+/* ── TYPOGRAPHY ───────────────────────────────────────── */
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.section-desc { font-size: 0.75rem; color: var(--muted); margin: 2px 0 0; }
+
+.font-mono { font-family: 'DM Mono', monospace; }
+
+.positive { color: var(--green) !important; }
+.negative { color: var(--red)   !important; }
+
+/* ── HERO ─────────────────────────────────────────────── */
+.page-hero { padding: 8px 0 16px; }
+.hero-title { font-size: 1.8rem; font-weight: 800; color: var(--fg); margin-bottom: 4px; }
+.hero-sub   { color: var(--muted); font-size: 0.8rem; margin: 0; }
+.last-updated { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+
+/* ── FEAR & GREED ─────────────────────────────────────── */
+.fg-card { border-top: 2px solid var(--yellow) !important; }
+
+.fg-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 3rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.fg-class { font-size: 0.78rem; font-weight: 700; margin-top: 2px; }
+
+.fg-gauge-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #ff3a5c, #ffc832, #0dff8c);
+  position: relative;
+}
+
+.fg-gauge-needle {
+  position: absolute;
+  top: -5px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 8px rgba(0,0,0,0.6);
+  transform: translateX(-50%);
+  transition: left 1s cubic-bezier(.34,1.56,.64,1);
+}
+
+.fg-gauge-labels { font-family: 'DM Mono', monospace; font-size: 0.55rem; }
+.fg-history      { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+
+.fg-advice {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+
+.fg-advice-fear          { background: rgba(255,58,92,0.08);  border: 1px solid rgba(255,58,92,0.2);  color: #ff8fa3; }
+.fg-advice-caution       { background: rgba(255,200,50,0.07); border: 1px solid rgba(255,200,50,0.2); color: var(--yellow); }
+.fg-advice-greed         { background: rgba(255,122,48,0.07); border: 1px solid rgba(255,122,48,0.2); color: var(--orange); }
+.fg-advice-extreme-greed { background: rgba(255,58,92,0.1);  border: 1px solid rgba(255,58,92,0.3);  color: var(--red); }
+
+/* ── TRENDING ─────────────────────────────────────────── */
+.trending-scroll { overflow-x: auto; padding-bottom: 8px; }
+
+.trending-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  padding: 8px 14px;
+  transition: all 0.2s;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.trending-pill:hover { border-color: var(--blue); transform: translateY(-2px); color: var(--fg); }
+.trending-thumb  { width: 24px; height: 24px; border-radius: 50%; }
+.trending-name   { font-size: 0.75rem; font-weight: 700; }
+.trending-change { font-family: 'DM Mono', monospace; font-size: 0.62rem; }
+
+/* ── COIN CARDS ───────────────────────────────────────── */
+.coin-card-link:hover .coin-card { border-color: var(--blue) !important; transform: translateY(-3px); }
+
+.coin-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.coin-logo    { width: 36px; height: 36px; border-radius: 50%; }
+.coin-logo-sm { width: 28px; height: 28px; border-radius: 50%; }
+.coin-logo-lg { width: 72px; height: 72px; border-radius: 50%; }
+
+.coin-logo-placeholder {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem; color: var(--muted);
+}
+
+.coin-name     { font-weight: 800; font-size: 0.82rem; color: var(--fg); }
+.coin-name-sm  { font-weight: 700; font-size: 0.78rem; color: var(--fg); }
+.coin-symbol   { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+.coin-symbol-sm{ font-family: 'DM Mono', monospace; font-size: 0.6rem;  color: var(--muted); }
+.coin-rank     { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+.coin-price    { font-family: 'DM Mono', monospace; font-size: 1.05rem; font-weight: 500; color: var(--fg); }
+.coin-change   { font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 600; margin-top: 2px; }
+.coin-mcap     { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+
+/* ── SPARKLINES ───────────────────────────────────────── */
+.sparkline-wrap   { height: 50px; }
+.sparkline-canvas { width: 100% !important; height: 50px !important; }
+.sparkline-sm     { width: 80px !important; height: 36px !important; }
+
+/* ── MARKETS TABLE ────────────────────────────────────── */
+.markets-toolbar { background: var(--card) !important; }
+
+.markets-table {
+  color: var(--text);
+  border-color: transparent;
+}
+
+.markets-table thead th {
+  color: var(--muted);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  border-color: var(--border);
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.markets-table tbody td {
+  border-color: var(--border);
+  padding: 10px 12px;
+  vertical-align: middle;
+  font-size: 0.78rem;
+}
+
+.coin-row:hover td { background: rgba(59,139,255,0.04); }
+.rank-cell { font-family: 'DM Mono', monospace; font-size: 0.65rem; }
+
+/* SIGNAL BADGES */
+.badge-signal {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-signal.bullish { background: rgba(13,255,140,0.1);  color: var(--green); border: 1px solid rgba(13,255,140,0.25); }
+.badge-signal.bearish { background: rgba(255,58,92,0.1);   color: var(--red);   border: 1px solid rgba(255,58,92,0.25);  }
+.badge-signal.neutral { background: rgba(59,139,255,0.1);  color: var(--blue);  border: 1px solid rgba(59,139,255,0.25); }
+
+/* ── PAGINATION ───────────────────────────────────────── */
+.page-link { background: var(--card2); border-color: var(--border); color: var(--text); font-size: 0.78rem; }
+.page-link:hover { background: var(--card); color: var(--fg); border-color: var(--blue); }
+.page-item.active .page-link { background: var(--blue); border-color: var(--blue); color: #fff; }
+.page-item.disabled .page-link { background: var(--card2); color: var(--muted); border-color: var(--border); }
+
+/* ── COIN DETAIL ──────────────────────────────────────── */
+.coin-detail-name   { font-size: 2rem; font-weight: 800; color: var(--fg); }
+.coin-detail-symbol { font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--muted); }
+.coin-rank-badge    { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 3px 10px; border-radius: 20px; background: var(--card2); border: 1px solid var(--border); color: var(--muted); }
+.coin-detail-price  { font-family: 'DM Mono', monospace; font-size: 2rem; font-weight: 500; color: var(--fg); margin-top: 4px; }
+
+.coin-change-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.coin-change-badge.positive { background: rgba(13,255,140,0.1); }
+.coin-change-badge.negative { background: rgba(255,58,92,0.1); }
+
+.chart-container { position: relative; height: 280px; }
+
+.stats-grid { display: flex; flex-direction: column; gap: 0; }
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+}
+
+.stat-row:last-child { border-bottom: none; }
+.stat-label { color: var(--muted); }
+.stat-value { font-family: 'DM Mono', monospace; font-weight: 500; color: var(--fg); }
+
+.coin-description { font-size: 0.78rem; line-height: 1.8; color: var(--text); }
+.coin-description.expanded { overflow: visible; }
+
+/* ── CTA ──────────────────────────────────────────────── */
+.cta-strip { border-top: 1px solid var(--border); }
+.cta-title { font-size: 1.4rem; font-weight: 800; color: var(--fg); }
+
+/* ── BUTTONS ──────────────────────────────────────────── */
+.btn-primary    { background: var(--blue);   border-color: var(--blue);   color: #fff; }
+.btn-primary:hover { background: #2d7aee; border-color: #2d7aee; }
+.btn-outline-primary { border-color: var(--blue); color: var(--blue); }
+.btn-outline-primary:hover { background: var(--blue); color: #fff; }
+.btn-outline-secondary { border-color: var(--border); color: var(--muted); }
+.btn-outline-secondary:hover { background: var(--card2); color: var(--fg); border-color: var(--muted); }
+
+/* ── FORMS ────────────────────────────────────────────── */
+.form-control, .form-select, .input-group-text {
+  background: var(--card2) !important;
+  border-color: var(--border) !important;
+  color: var(--fg) !important;
+  font-size: 0.82rem;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--blue) !important;
+  box-shadow: 0 0 0 3px rgba(59,139,255,0.15) !important;
+}
+
+.form-control::placeholder { color: var(--muted) !important; }
+.form-label { color: var(--muted); font-size: 0.72rem; }
+
+/* ── FOOTER ───────────────────────────────────────────── */
+.site-footer { background: var(--surface); border-top: 1px solid var(--border); }
+.footer-logo { font-family: 'DM Mono', monospace; font-weight: 500; letter-spacing: 3px; color: var(--fg); font-size: 0.9rem; }
+.footer-sub  { font-size: 0.68rem; color: var(--muted); }
+.footer-attr { font-size: 0.68rem; color: var(--muted); }
+.footer-attr a { color: var(--blue); text-decoration: none; }
+.footer-attr a:hover { color: var(--fg); }
+.footer-disc { font-size: 0.62rem; color: var(--muted); }
+
+/* ── ERROR PAGE ───────────────────────────────────────── */
+.error-page { padding: 60px 20px; }
+.error-code    { font-family: 'DM Mono', monospace; font-size: 5rem; font-weight: 500; color: var(--muted); }
+.error-message { font-size: 1rem; color: var(--text); margin-top: 8px; }
+
+/* ── LOADING ──────────────────────────────────────────── */
+.spinner-border { color: var(--blue) !important; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-title { font-size: 1.4rem; }
+  .coin-detail-price { font-size: 1.5rem; }
+  .markets-table { font-size: 0.7rem; }
+  .markets-table thead th:nth-child(4),
+  .markets-table tbody td:nth-child(4) { display: none; }
+}
+
+/* ── LOADING SKELETONS ────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--card2) 25%, var(--border) 50%, var(--card2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-logo    { width: 36px; height: 36px; border-radius: 50%; }
+.skeleton-text    { height: 14px; width: 80%; }
+.skeleton-text-sm { height: 10px; width: 50%; }
+
+.loading-card { opacity: 0.6; pointer-events: none; }
+
+.alert-muted {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.skeleton-price { height: 20px; width: 65%; border-radius: 4px; }
+
+/* ── REAL-TIME PRICE FLASH ───────────────────────────────── */
+@keyframes priceFlash {
+  0%   { background: rgba(59,139,255,0.25); }
+  100% { background: transparent; }
+}
+
+.price-flash {
+  animation: priceFlash 0.6s ease-out;
+  border-radius: 3px;
+}
+
+/* ── SIGNAL CARDS ─────────────────────────────────────────── */
+.signal-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  transition: all 0.2s;
+}
+
+.coin-card-link:hover .signal-card { transform: translateY(-3px); }
+
+.signal-card.signal-bullish { border-left: 3px solid var(--green); }
+.signal-card.signal-neutral { border-left: 3px solid var(--accent); }
+.signal-card.signal-caution { border-left: 3px solid var(--orange); }
+.signal-card.signal-bearish { border-left: 3px solid var(--red); }
+
+/* SCORE BADGE */
+.score-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.score-badge.score-bullish { background: rgba(13,255,140,0.12); color: var(--green); border: 1px solid rgba(13,255,140,0.3); }
+.score-badge.score-neutral  { background: rgba(59,139,255,0.12); color: var(--blue);  border: 1px solid rgba(59,139,255,0.3); }
+.score-badge.score-caution  { background: rgba(255,122,48,0.12); color: var(--orange);border: 1px solid rgba(255,122,48,0.3); }
+.score-badge.score-bearish  { background: rgba(255,58,92,0.12);  color: var(--red);   border: 1px solid rgba(255,58,92,0.3);  }
+
+/* VERDICT BADGE */
+.verdict-badge {
+  display: inline-block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.verdict-badge.verdict-bullish { background: rgba(13,255,140,0.1);  color: var(--green);  border: 1px solid rgba(13,255,140,0.25); }
+.verdict-badge.verdict-neutral  { background: rgba(59,139,255,0.1);  color: var(--blue);   border: 1px solid rgba(59,139,255,0.25); }
+.verdict-badge.verdict-caution  { background: rgba(255,122,48,0.1);  color: var(--orange); border: 1px solid rgba(255,122,48,0.25); }
+.verdict-badge.verdict-bearish  { background: rgba(255,58,92,0.1);   color: var(--red);    border: 1px solid rgba(255,58,92,0.25);  }
+
+/* SIGNAL TAGS */
+.signal-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.signal-tag {
+  font-size: 0.6rem;
+  font-family: 'DM Mono', monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.signal-tag.bullish { background: rgba(13,255,140,0.08); color: var(--green); border: 1px solid rgba(13,255,140,0.2); }
+.signal-tag.bearish { background: rgba(255,58,92,0.08);  color: var(--red);   border: 1px solid rgba(255,58,92,0.2);  }
+
+/* STAT MINI ROW */
+.stat-mini-row {
+  display: flex;
+  gap: 12px;
+  font-size: 0.65rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+  font-family: 'DM Mono', monospace;
+}
+
+/* MARKET SUMMARY */
+.summary-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.summary-lbl {
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* DISCLAIMER */
+.disclaimer-box {
+  background: rgba(59,139,255,0.05);
+  border: 1px solid rgba(59,139,255,0.2);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 20px;
+  line-height: 1.7;
+}
+
+/* ── SIGNAL STATS GRID ────────────────────────────────── */
+.signal-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.signal-stat {
+  background: var(--card2);
+  border-radius: 7px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.signal-stat-label {
+  font-size: 0.58rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-family: 'DM Mono', monospace;
+}
+
+.signal-stat-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  color: var(--fg);
+}
+
+
+
+/* ═══════════════════════════════════════════════════
+   MARKETS TABLE — COMPLETE OVERRIDE
+   Override Bootstrap's white table defaults
+═══════════════════════════════════════════════════ */
+
+/* Override Bootstrap table defaults */
+.markets-table,
+.markets-table > :not(caption) > * > *,
+.table > :not(caption) > * > * {
+  background-color: transparent !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Table base */
+.markets-table {
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Header */
+.markets-table thead tr {
+  background: var(--card2) !important;
+}
+
+.markets-table thead th {
+  background: var(--card2) !important;
+  color: var(--muted) !important;
+  font-size: 0.65rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  font-weight: 600 !important;
+  border-color: var(--border) !important;
+  padding: 10px 12px !important;
+  white-space: nowrap !important;
+}
+
+/* Body rows */
+.markets-table tbody tr {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+}
+
+.markets-table tbody tr:nth-child(even) {
+  background: var(--card2) !important;
+}
+
+/* ALL cells */
+.markets-table tbody td {
+  background: transparent !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+  font-size: 0.78rem !important;
+}
+
+/* Hover — dark blue highlight, NOT white */
+.markets-table tbody tr:hover {
+  background: rgba(59,139,255,0.08) !important;
+}
+
+.markets-table tbody tr:hover td {
+  background: transparent !important;
+  color: var(--fg) !important;
+}
+
+/* Coin name cells */
+.markets-table .coin-name-sm {
+  color: var(--fg) !important;
+  font-weight: 700 !important;
+}
+
+.markets-table .coin-symbol-sm {
+  color: var(--muted) !important;
+  font-size: 0.65rem !important;
+}
+
+/* Rank */
+.markets-table .rank-cell {
+  color: var(--muted) !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 0.72rem !important;
+}
+
+/* Mono cells */
+.markets-table .font-mono {
+  font-family: 'DM Mono', monospace !important;
+  color: var(--text) !important;
+}
+
+/* Sortable headers */
+.sortable-col {
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: color 0.15s !important;
+  white-space: nowrap !important;
+}
+
+.sortable-col:hover {
+  color: var(--accent) !important;
+}
+
+.sortable-col.active-sort {
+  color: var(--accent) !important;
+}
+
+
+/* ── RSI COLUMN VISIBILITY FIX ───────────────────── */
+.markets-table tbody td:nth-child(9),
+.markets-table thead th:nth-child(9) {
+  display: table-cell !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: var(--text) !important;
+  min-width: 60px !important;
+}
+
+/* Make sure positive/negative colors show in table */
+.markets-table .positive { color: var(--green) !important; }
+.markets-table .negative { color: var(--red) !important; }
+.markets-table .text-muted { color: var(--muted) !important; }
+
+/* ── MARKET CONTEXT WIDGET ────────────────────────── */
+.market-context-card { border-top: 2px solid #f7931a !important; }
+
+.btc-price {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1;
+}
+
+.btc-symbol {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.btc-mood {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.68rem;
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+.btc-bullish  { background: rgba(13,255,140,0.08); color: var(--green); border: 1px solid rgba(13,255,140,0.2); }
+.btc-bearish  { background: rgba(255,58,92,0.08);  color: var(--red);   border: 1px solid rgba(255,58,92,0.2);  }
+.btc-caution  { background: rgba(255,200,50,0.08); color: var(--yellow);border: 1px solid rgba(255,200,50,0.2); }
+
+/* DOMINANCE BAR */
+.dom-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f7931a;
+}
+
+.dom-bar-bg {
+  position: relative;
+  height: 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.dom-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, #f7931a, #ffb347);
+  border-radius: 10px 0 0 10px;
+  transition: width 0.8s ease;
+}
+
+.dom-bar-label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.58rem;
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.dom-bar-label.left  { left: 8px;  color: #000; }
+.dom-bar-label.right { right: 8px; color: var(--muted); }
+
+/* DOM SIGNAL */
+.dom-signal {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.dom-btc     { background: rgba(247,147,26,0.1);  color: #f7931a;      border: 1px solid rgba(247,147,26,0.25); }
+.dom-alt     { background: rgba(13,255,140,0.08); color: var(--green);  border: 1px solid rgba(13,255,140,0.2);  }
+.dom-neutral { background: rgba(59,139,255,0.08); color: var(--accent); border: 1px solid rgba(59,139,255,0.2);  }
+
+/* DOM TREND */
+.dom-trend {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.65rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.dom-trend-icon { font-weight: 700; flex-shrink: 0; }
+
+/* ── BTC ADVICE BOX VARIANTS ─────────────────────── */
+.fg-advice-btc-bullish {
+  background: rgba(13,255,140,0.08);
+  border: 1px solid rgba(13,255,140,0.25);
+  color: var(--green);
+}
+
+.fg-advice-btc-bearish {
+  background: rgba(255,58,92,0.08);
+  border: 1px solid rgba(255,58,92,0.25);
+  color: var(--red);
+}
+
+.fg-advice-btc-caution {
+  background: rgba(255,200,50,0.07);
+  border: 1px solid rgba(255,200,50,0.2);
+  color: var(--yellow);
+}

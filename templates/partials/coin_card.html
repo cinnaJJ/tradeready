@@ -1,0 +1,40 @@
+{% set sym = (coin.symbol or '')|upper %}
+{% set tv_url = 'https://www.tradingview.com/chart/?symbol=' + sym + 'USDT' %}
+<a href="{{ tv_url }}" target="_blank" rel="noopener" class="coin-card-link text-decoration-none">
+  <div class="coin-card h-100">
+    <div class="d-flex align-items-center gap-3 mb-3">
+      {% if coin.image or coin.thumb %}
+      <img src="{{ coin.image or coin.thumb }}" alt="{{ coin.name }}" class="coin-logo" loading="lazy"/>
+      {% else %}
+      <div class="coin-logo-placeholder">{{ (coin.symbol or '?')[0] }}</div>
+      {% endif %}
+      <div>
+        <div class="coin-name">{{ coin.name }}</div>
+        <div class="coin-symbol">{{ sym }}</div>
+      </div>
+      {% if coin.market_cap_rank or coin.rank %}
+      <div class="coin-rank ms-auto">#{{ coin.market_cap_rank or coin.rank }}</div>
+      {% endif %}
+    </div>
+    <div class="coin-price" data-price-id="{{ coin.id }}">
+      {{ format_currency(coin.current_price or coin.price) }}
+    </div>
+    {% set change = coin.price_change_percentage_24h or coin.change %}
+    <div class="coin-change {{ 'positive' if (change or 0) >= 0 else 'negative' }}"
+         data-change-id="{{ coin.id }}">
+      <i class="bi bi-caret-{{ 'up' if (change or 0) >= 0 else 'down' }}-fill me-1"></i>
+      {{ format_percentage(change) }}
+    </div>
+    {% if coin.market_cap or coin.mcap %}
+    <div class="coin-mcap mt-2">MCap: {{ format_currency(coin.market_cap or coin.mcap) }}</div>
+    {% endif %}
+    {% if coin.sparkline_data %}
+    <div class="sparkline-wrap mt-3">
+      <canvas class="sparkline-canvas"
+        data-sparkline="{{ coin.sparkline_data|tojson }}"
+        data-positive="{{ (change or 0) >= 0 }}">
+      </canvas>
+    </div>
+    {% endif %}
+  </div>
+</a>

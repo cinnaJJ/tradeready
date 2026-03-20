@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% block title %}{{ coin.name }}{% endblock %}
+
+{% block content %}
+{% set md = coin.market_data %}
+{% set price = md.current_price.usd if md else None %}
+{% set change24 = md.price_change_percentage_24h if md else None %}
+{% set change7d  = md.price_change_percentage_7d  if md else None %}
+{% set mcap   = md.market_cap.usd if md else None %}
+{% set vol    = md.total_volume.usd if md else None %}
+{% set supply = md.circulating_supply if md else None %}
+{% set ath    = md.ath.usd if md else None %}
+{% set sparkline = md.sparkline_7d.price if md and md.sparkline_7d else [] %}
+
+<div class="container py-4">
+
+  <!-- BACK -->
+  <a href="/markets" class="btn btn-sm btn-outline-secondary mb-4">
+    <i class="bi bi-arrow-left me-1"></i> Back to Markets
+  </a>
+
+  <!-- COIN HEADER -->
+  <div class="coin-detail-header d-flex align-items-start gap-4 mb-5 flex-wrap">
+    {% if coin.image and coin.image.large %}
+    <img src="{{ coin.image.large }}" alt="{{ coin.name }}" class="coin-logo-lg"/>
+    {% endif %}
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-center gap-3 mb-1 flex-wrap">
+        <h1 class="coin-detail-name mb-0">{{ coin.name }}</h1>
+        <span class="coin-detail-symbol">{{ coin.symbol|upper }}</span>
+        {% if coin.market_cap_rank %}
+        <span class="coin-rank-badge">#{{ coin.market_cap_rank }}</span>
+        {% endif %}
+      </div>
+      {% if price %}
+      <div class="coin-detail-price">{{ format_currency(price) }}</div>
+      {% endif %}
+      <div class="d-flex gap-3 mt-2 flex-wrap">
+        {% if change24 is not none %}
+        <span class="coin-change-badge {{ 'positive' if change24 >= 0 else 'negative' }}">
+          <i class="bi bi-caret-{{ 'up' if change24 >= 0 else 'down' }}-fill"></i>
+          {{ format_percentage(change24) }} (24h)
+        </span>
+        {% endif %}
+        {% if change7d is not none %}
+        <span class="coin-change-badge {{ 'positive' if change7d >= 0 else 'negative' }}">
+          <i class="bi bi-caret-{{ 'up' if change7d >= 0 else 'down' }}-fill"></i>
+          {{ format_percentage(change7d) }} (7d)
+        </span>
+        {% endif %}
+      </div>
+    </div>
+    <!-- LINKS -->
+    <div class="coin-links d-flex gap-2 flex-wrap">
+      {% if coin.links %}
+        {% if coin.links.homepage and coin.links.homepage[0] %}
+        <a href="{{ coin.links.homepage[0] }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-globe me-1"></i>Website
+        </a>
+        {% endif %}
+        {% if coin.links.blockchain_site and coin.links.blockchain_site[0] %}
+        <a href="{{ coin.links.blockchain_site[0] }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-box me-1"></i>Explorer
+        </a>
+        {% endif %}
+        {% if coin.links.subreddit_url %}
+        <a href="{{ coin.links.subreddit_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-reddit me-1"></i>Reddit
+        </a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- CHART -->
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-body p-4">
+          <div class="section-label mb-3">📈 7-Day Price Chart</div>
+          {% if sparkline %}
+          <div class="chart-container">
+            <canvas id="priceChart"
+              data-sparkline="{{ sparkline|tojson }}"
+              data-positive="{{ change7d is not none and change7d >= 0 }}">
+            </canvas>
+          </div>
+          {% else %}
+          <div class="text-muted small py-4 text-center">Chart data unavailable</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- DESCRIPTION -->
+      {% if coin.description and coin.description.en %}
+      <div class="card">
+        <div class="card-body p-4">
+          <div class="section-label mb-3">About {{ coin.name }}</div>
+          <div class="coin-description" id="coinDesc">
+            {{ coin.description.en | striptags | truncate(500) }}
+          </div>
+          {% if coin.description.en|length > 500 %}
+          <button class="btn btn-sm btn-link ps-0 mt-2" onclick="toggleDesc()">Read more</button>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- STATS -->
+    <div class="col-lg-4">
+      <div class="card mb-4">
+        <div class="card-body p-4">
+          <div class="section-label mb-3">📊 Market Stats</div>
+          <div class="stats-grid">
+            <div class="stat-row">
+              <span class="stat-label">Market Cap</span>
+              <span class="stat-value">{{ format_currency(mcap) }}</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">24h Volume</span>
+              <span class="stat-value">{{ format_currency(vol) }}</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Circulating Supply</span>
+              <span class="stat-value">
+                {% if supply %}{{ "{:,.0f}".format(supply) }} {{ coin.symbol|upper }}{% else %}N/A{% endif %}
+              </span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">All Time High</span>
+              <span class="stat-value">{{ format_currency(ath) }}</span>
+            </div>
+            {% if md and md.ath_date and md.ath_date.usd %}
+            <div class="stat-row">
+              <span class="stat-label">ATH Date</span>
+              <span class="stat-value">{{ md.ath_date.usd[:10] }}</span>
+            </div>
+            {% endif %}
+            {% if md and md.low_24h and md.low_24h.usd %}
+            <div class="stat-row">
+              <span class="stat-label">24h Low</span>
+              <span class="stat-value negative">{{ format_currency(md.low_24h.usd) }}</span>
+            </div>
+            {% endif %}
+            {% if md and md.high_24h and md.high_24h.usd %}
+            <div class="stat-row">
+              <span class="stat-label">24h High</span>
+              <span class="stat-value positive">{{ format_currency(md.high_24h.usd) }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- FEAR & GREED WIDGET -->
+      {% include 'partials/fear_greed_widget.html' %}
+    </div>
+  </div>
+
+  <!-- SIMILAR COINS -->
+  {% if similar %}
+  <div class="mt-5">
+    <div class="section-label mb-3">🔍 More Coins</div>
+    <div class="row g-3">
+      {% for c in similar[:6] %}
+      <div class="col-6 col-md-4 col-lg-2">
+        {% with coin=c %}
+          {% include 'partials/coin_card.html' %}
+        {% endwith %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Full 7d price chart
+document.addEventListener('DOMContentLoaded', function() {
+  const canvas = document.getElementById('priceChart');
+  if (!canvas) return;
+  const prices   = JSON.parse(canvas.dataset.sparkline || '[]');
+  const positive = canvas.dataset.positive === 'True';
+  const color    = positive ? '#0dff8c' : '#ff3a5c';
+  const labels   = prices.map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (prices.length - i - 1));
+    return d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  });
+
+  new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: prices,
+        borderColor: color,
+        backgroundColor: color + '18',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: color,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            label: ctx => ' $' + ctx.parsed.y.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:6})
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#1c2a3a' }, ticks: { color: '#3a5068', maxTicksLimit: 7 } },
+        y: { grid: { color: '#1c2a3a' }, ticks: { color: '#3a5068', callback: v => '$' + v.toLocaleString() } }
+      },
+      interaction: { mode: 'index', intersect: false },
+    }
+  });
+});
+
+// Toggle description
+function toggleDesc() {
+  const el  = document.getElementById('coinDesc');
+  const btn = document.querySelector('[onclick="toggleDesc()"]');
+  if (el.style.webkitLineClamp === 'unset' || el.classList.contains('expanded')) {
+    el.classList.remove('expanded');
+    btn.textContent = 'Read more';
+  } else {
+    el.classList.add('expanded');
+    btn.textContent = 'Read less';
+  }
+}
+</script>
+{% endblock %}

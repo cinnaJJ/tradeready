@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% block title %}Markets{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-hero mb-4">
+    <h1 class="hero-title">Markets</h1>
+    <p class="hero-sub">Top {{ total }} coins — click any column header to sort · click any row to open TradingView</p>
+  </div>
+
+  <!-- SEARCH BAR -->
+  <div class="markets-toolbar card p-3 mb-4">
+    <form method="GET" action="/markets" id="marketsForm">
+      <input type="hidden" name="sort" id="sortInput" value="{{ sort_by }}"/>
+      <div class="d-flex gap-3 align-items-center">
+        <div class="flex-grow-1">
+          <div class="input-group">
+            <span class="input-group-text" style="background:var(--card2);border-color:var(--border)">
+              <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" name="q" value="{{ search }}" class="form-control"
+              placeholder="Search by name or symbol..." id="searchInput" autocomplete="off"/>
+            {% if search %}
+            <a href="/markets" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>
+            {% endif %}
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary px-4">Search</button>
+        {% if search or sort_by != 'market_cap_desc' %}
+        <a href="/markets" class="btn btn-outline-secondary">Reset</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  {% if search %}
+  <div class="mb-3" style="font-size:0.72rem;color:var(--muted)">
+    {{ coins|length }} results for "<strong style="color:var(--fg)">{{ search }}</strong>"
+  </div>
+  {% endif %}
+
+  <!-- TABLE -->
+  <div class="table-responsive">
+    <table class="table markets-table align-middle mb-0">
+      <thead>
+        <tr>
+          <th class="sortable-col {{ 'active-sort' if sort_by == 'market_cap_desc' }}"
+              onclick="doSort('market_cap_desc')" title="Sort by rank">
+            # {% if sort_by == 'market_cap_desc' %}<i class="bi bi-caret-down-fill" style="font-size:0.55rem"></i>{% endif %}
+          </th>
+          <th>Coin</th>
+          <th class="text-end sortable-col {{ 'active-sort' if sort_by == 'price_desc' }}"
+              onclick="doSort('price_desc')" title="Sort by price">
+            Price {% if sort_by == 'price_desc' %}<i class="bi bi-caret-down-fill" style="font-size:0.55rem"></i>{% else %}<i class="bi bi-caret-down" style="font-size:0.55rem;opacity:0.3"></i>{% endif %}
+          </th>
+          <th class="text-end sortable-col {{ 'active-sort' if sort_by == 'change_1h_desc' }}"
+              onclick="doSort('change_1h_desc')" title="Sort by 1h change">
+            1h % {% if sort_by == 'change_1h_desc' %}<i class="bi bi-caret-down-fill" style="font-size:0.55rem"></i>{% else %}<i class="bi bi-caret-down" style="font-size:0.55rem;opacity:0.3"></i>{% endif %}
+          </th>
+          <th class="text-end sortable-col {{ 'active-sort' if sort_by == 'change_desc' }}"
+              onclick="doSort('change_desc')" title="Sort by 24h change">
+            24h % {% if sort_by == 'change_desc' %}<i class="bi bi-caret-down-fill" style="font-size:0.55rem"></i>{% else %}<i class="bi bi-caret-down" style="font-size:0.55rem;opacity:0.3"></i>{% endif %}
+          </th>
+          <th class="text-end sortable-col {{ 'active-sort' if sort_by == 'change_7d_desc' }}"
+              onclick="doSort('change_7d_desc')" title="Sort by 7d change">
+            7d % {% if sort_by == 'change_7d_desc' %}<i class="bi bi-caret-down-fill" style="font-size:0.55rem"></i>{% else %}<i class="bi bi-caret-down" style="font-size:0.55rem;opacity:0.3"></i>{% endif %}
+          </th>
+          <th class="text-end sortable-col {{ 'active-sort' if sort_by == 'volume_desc' }}"
+              onclick="doSort('volume_desc')" title="Sort by volume">
+            Volume {% if sort_by == 'volume_desc' %}<i class="bi bi-caret-down-fill" style="font-size:0.55rem"></i>{% else %}<i class="bi bi-caret-down" style="font-size:0.55rem;opacity:0.3"></i>{% endif %}
+          </th>
+          <th class="text-end sortable-col {{ 'active-sort' if sort_by == 'market_cap_desc' }}"
+              onclick="doSort('market_cap_desc')" title="Sort by market cap">
+            Mkt Cap {% if sort_by == 'market_cap_desc' %}<i class="bi bi-caret-down-fill" style="font-size:0.55rem"></i>{% else %}<i class="bi bi-caret-down" style="font-size:0.55rem;opacity:0.3"></i>{% endif %}
+          </th>
+          <th class="text-end sortable-col {{ 'active-sort' if sort_by == 'rsi_asc' }}"
+              onclick="doSort('rsi_asc')" title="Sort by RSI — lowest first (most oversold)">
+            RSI {% if sort_by == 'rsi_asc' %}<i class="bi bi-caret-up-fill" style="font-size:0.55rem"></i>{% else %}<i class="bi bi-caret-down" style="font-size:0.55rem;opacity:0.3"></i>{% endif %}
+          </th>
+          <th class="text-center">7d Chart</th>
+          <th class="text-center sortable-col {{ 'active-sort' if sort_by == 'score_desc' }}"
+              onclick="doSort('score_desc')" title="Sort by signal score — best setups first">
+            Signal {% if sort_by == 'score_desc' %}<i class="bi bi-caret-down-fill" style="font-size:0.55rem"></i>{% else %}<i class="bi bi-caret-down" style="font-size:0.55rem;opacity:0.3"></i>{% endif %}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for coin in coins %}
+        {% set sym = coin.symbol|upper %}
+        {% set tv_url = 'https://www.tradingview.com/chart/?symbol=' + sym + 'USDT' %}
+        <tr class="coin-row" onclick="window.open('{{ tv_url }}', '_blank')"
+            style="cursor:pointer" title="Open {{ coin.name }} on TradingView →">
+          <td class="rank-cell">{{ coin.rank }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              {% if coin.image %}
+              <img src="{{ coin.image }}" alt="{{ coin.name }}" class="coin-logo-sm" loading="lazy"/>
+              {% endif %}
+              <div>
+                <div class="coin-name-sm">{{ coin.name }}</div>
+                <div class="coin-symbol-sm">{{ sym }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="text-end font-mono" data-price-id="{{ coin.id }}">
+            {{ format_currency(coin.current_price) }}
+          </td>
+          <td class="text-end {{ 'positive' if (coin.price_change_percentage_1h_in_currency or 0) >= 0 else 'negative' }}">
+            {{ format_percentage(coin.price_change_percentage_1h_in_currency) }}
+          </td>
+          <td class="text-end {{ 'positive' if (coin.price_change_percentage_24h or 0) >= 0 else 'negative' }}"
+              data-change-id="{{ coin.id }}">
+            {{ format_percentage(coin.price_change_percentage_24h) }}
+          </td>
+          <td class="text-end {{ 'positive' if (coin.price_change_percentage_7d_in_currency or 0) >= 0 else 'negative' }}">
+            {{ format_percentage(coin.price_change_percentage_7d_in_currency) }}
+          </td>
+          <td class="text-end font-mono">{{ format_currency(coin.total_volume) }}</td>
+          <td class="text-end font-mono">{{ format_currency(coin.market_cap) }}</td>
+          <td class="text-end font-mono">
+            {% if coin.signal_rsi %}
+            <span class="{% if coin.signal_rsi <= 30 %}positive{% elif coin.signal_rsi >= 70 %}negative{% else %}text-muted{% endif %}">
+              {{ coin.signal_rsi }}
+            </span>
+            {% if coin.signal_rsi_source == 'Binance (real)' %}
+            <span style="color:var(--green);font-size:0.55rem">✓</span>
+            {% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-center">
+            {% if coin.sparkline_data %}
+            <canvas class="sparkline-canvas sparkline-sm"
+              data-sparkline="{{ coin.sparkline_data|tojson }}"
+              data-positive="{{ (coin.price_change_percentage_7d_in_currency or 0) >= 0 }}">
+            </canvas>
+            {% endif %}
+          </td>
+          <td class="text-center" onclick="event.stopPropagation()">
+            <span class="badge-signal {{ coin.signal_color or 'neutral' }}">
+              {{ coin.signal_icon }} {{ coin.signal_score }}/10
+            </span>
+            <div style="font-size:0.58rem;color:var(--muted);margin-top:2px">{{ coin.signal_verdict }}</div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="11" class="text-center py-5" style="color:var(--muted)">
+            {% if search %}No coins found for "{{ search }}"{% else %}No market data — refresh in a moment{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINATION -->
+  {% if total_pages > 1 %}
+  <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+      {% if page > 1 %}
+      <li class="page-item">
+        <a class="page-link" href="/markets?page={{ page-1 }}&sort={{ sort_by }}&q={{ search }}">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+      {% endif %}
+      {% for p in range(1, total_pages+1) %}
+        {% if p == page or (p >= page-2 and p <= page+2) or p == 1 or p == total_pages %}
+        <li class="page-item {{ 'active' if p == page else '' }}">
+          <a class="page-link" href="/markets?page={{ p }}&sort={{ sort_by }}&q={{ search }}">{{ p }}</a>
+        </li>
+        {% elif p == page-3 or p == page+3 %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+      {% if page < total_pages %}
+      <li class="page-item">
+        <a class="page-link" href="/markets?page={{ page+1 }}&sort={{ sort_by }}&q={{ search }}">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  <div class="disclaimer-box mt-4">
+    <i class="bi bi-graph-up me-1"></i>
+    Click any row → opens TradingView chart in new tab.
+    RSI <span style="color:var(--green)">✓</span> = real data from CryptoCompare.
+    Signal sort shows best trading setups first.
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doSort(key) {
+  var form = document.getElementById('marketsForm');
+  document.getElementById('sortInput').value = key;
+  form.submit();
+}
+</script>
+{% endblock %}
