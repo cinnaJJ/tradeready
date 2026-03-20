@@ -768,3 +768,74 @@ body {
   border: 1px solid rgba(255,200,50,0.2);
   color: var(--yellow);
 }
+
+
+/* ═══════════════════════════════════════════════
+   FINAL COMPREHENSIVE FIXES
+═══════════════════════════════════════════════ */
+
+/* Section labels — bright white */
+.section-label {
+  color: var(--fg) !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+}
+
+/* Fill empty card space — equal height cards */
+.fg-card,
+.market-context-card,
+.card.h-100 {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.fg-card .card-body,
+.market-context-card .card-body {
+  flex: 1 !important;
+}
+
+/* Markets table — force dark background on ALL elements */
+.table {
+  --bs-table-bg: transparent !important;
+  --bs-table-striped-bg: transparent !important;
+  --bs-table-hover-bg: transparent !important;
+  --bs-table-border-color: var(--border) !important;
+  --bs-table-color: var(--text) !important;
+}
+
+.markets-table,
+.markets-table thead,
+.markets-table tbody,
+.markets-table tr,
+.markets-table th,
+.markets-table td {
+  background-color: transparent !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.markets-table thead th {
+  background: var(--card2) !important;
+  color: var(--muted) !important;
+}
+
+.markets-table tbody tr {
+  background: var(--card) !important;
+}
+
+.markets-table tbody tr:nth-child(even) {
+  background: var(--card2) !important;
+}
+
+.markets-table tbody tr:hover,
+.markets-table tbody tr:hover td {
+  background: rgba(59,139,255,0.1) !important;
+  color: var(--fg) !important;
+}
+
+.markets-table .coin-name-sm { color: var(--fg) !important; font-weight: 700 !important; }
+.markets-table .coin-symbol-sm { color: var(--muted) !important; }
+.markets-table .rank-cell { color: var(--muted) !important; }
+.markets-table .font-mono { color: var(--text) !important; }
+.markets-table .positive { color: var(--green) !important; }
+.markets-table .negative { color: var(--red) !important; }
