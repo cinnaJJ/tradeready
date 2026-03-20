@@ -1,18 +1,16 @@
-{% set fg  = fear_greed %}
-{% set gm  = global_metrics %}
-{% set btc = btc_data %}
+{% set fg = fear_greed %}
 {% if fg %}
 {% set val = fg.value %}
 {% if val <= 10 %}
-  {% set fg_color = '#ff3a5c' %}{% set fg_label = 'Extreme Fear' %}
+  {% set fg_color = '#ff3a5c' %}
 {% elif val <= 24 %}
-  {% set fg_color = '#ff6b6b' %}{% set fg_label = 'Fear' %}
+  {% set fg_color = '#ff6b6b' %}
 {% elif val <= 49 %}
-  {% set fg_color = '#ffc832' %}{% set fg_label = 'Fear' %}
+  {% set fg_color = '#ffc832' %}
 {% elif val <= 74 %}
-  {% set fg_color = '#ff7a30' %}{% set fg_label = 'Greed' %}
+  {% set fg_color = '#ff7a30' %}
 {% else %}
-  {% set fg_color = '#0dff8c' %}{% set fg_label = 'Extreme Greed' %}
+  {% set fg_color = '#0dff8c' %}
 {% endif %}
 
 <div class="card fg-card h-100">
@@ -42,7 +40,6 @@
       </div>
     </div>
 
-    <!-- F&G ADVICE -->
     {% if val <= 24 %}
     <div class="fg-advice mt-3 fg-advice-fear">
       <i class="bi bi-info-circle me-1"></i>
@@ -64,89 +61,6 @@
       <strong>⚠ Extreme Greed.</strong> High reversal risk. Avoid new longs. Consider taking profits.
     </div>
     {% endif %}
-
-    <!-- BTC PRICE + DOMINANCE CONTEXT (same style as advice box) -->
-    {% if btc and btc.price %}
-    <hr style="border-color:var(--border);margin:12px 0 10px"/>
-
-    <!-- BTC PRICE ROW -->
-    <div class="d-flex align-items-center justify-content-between mb-2">
-      <div style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">₿ Bitcoin</div>
-      <div class="d-flex align-items-center gap-2">
-        <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--fg);font-size:0.82rem">${{ "{:,.0f}".format(btc.price) }}</span>
-        <span class="{{ 'positive' if (btc.change24 or 0) >= 0 else 'negative' }}" style="font-size:0.7rem;font-family:'DM Mono',monospace">
-          {{ '+' if (btc.change24 or 0) >= 0 else '' }}{{ "%.2f"|format(btc.change24 or 0) }}%
-        </span>
-      </div>
-    </div>
-
-    <!-- BTC MOOD ADVICE BOX -->
-    <div class="fg-advice
-      {% if btc.mood == 'bullish' %}fg-advice-btc-bullish
-      {% elif btc.mood == 'bearish' %}fg-advice-btc-bearish
-      {% else %}fg-advice-btc-caution{% endif %}">
-      {% if btc.mood == 'bullish' %}🟢
-      {% elif btc.mood == 'bearish' %}🔴
-      {% else %}🟡{% endif %}
-      {{ btc.mood_desc }}
-    </div>
-    {% endif %}
-
-    <!-- BTC DOMINANCE ADVICE BOX -->
-    {% if gm and gm.btc_dominance %}
-    <div class="d-flex align-items-center justify-content-between mt-2 mb-1">
-      <div style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px">BTC Dominance</div>
-      <div class="d-flex align-items-center gap-2">
-        <span style="font-family:'DM Mono',monospace;font-weight:700;color:#f7931a;font-size:0.82rem">{{ "%.1f"|format(gm.btc_dominance) }}%</span>
-        <span class="{{ 'positive' if (gm.btc_dominance_24h or 0) >= 0 else 'negative' }}" style="font-size:0.68rem;font-family:'DM Mono',monospace">
-          {{ '+' if (gm.btc_dominance_24h or 0) >= 0 else '' }}{{ "%.2f"|format(gm.btc_dominance_24h or 0) }}%
-        </span>
-      </div>
-    </div>
-
-    <!-- DOMINANCE BAR -->
-    <div class="dom-bar-bg mb-2">
-      <div class="dom-bar-fill" style="width:{{ gm.btc_dominance }}%"></div>
-      <div class="dom-bar-label left">BTC {{ "%.0f"|format(gm.btc_dominance) }}%</div>
-      <div class="dom-bar-label right">Alts {{ "%.0f"|format(100 - gm.btc_dominance) }}%</div>
-    </div>
-
-    <!-- DOMINANCE INTERPRETATION -->
-    {% if btc and btc.price %}
-      {% set dom_rising  = (gm.btc_dominance_24h or 0) > 0.3 %}
-      {% set dom_falling = (gm.btc_dominance_24h or 0) < -0.3 %}
-      {% set btc_up      = (btc.change24 or 0) > 0 %}
-
-      {% if dom_rising and btc_up %}
-      <div class="fg-advice fg-advice-btc-caution">
-        <i class="bi bi-arrow-up-circle me-1"></i>
-        <strong>Stick to BTC.</strong> Dominance rising + BTC up — money flowing into Bitcoin. Altcoins likely underperforming.
-      </div>
-      {% elif dom_falling and btc_up %}
-      <div class="fg-advice fg-advice-btc-bullish">
-        <i class="bi bi-shuffle me-1"></i>
-        <strong>Altcoin season forming.</strong> Dominance falling + BTC up — money rotating into alts. Good time to look at altcoin setups.
-      </div>
-      {% elif dom_rising and not btc_up %}
-      <div class="fg-advice fg-advice-btc-bearish">
-        <i class="bi bi-exclamation-octagon me-1"></i>
-        <strong>Sit out.</strong> Dominance rising + BTC down — everything dumping. No good entries right now.
-      </div>
-      {% elif dom_falling and not btc_up %}
-      <div class="fg-advice fg-advice-btc-bearish">
-        <i class="bi bi-graph-down me-1"></i>
-        <strong>Avoid altcoins.</strong> Dominance falling + BTC down — alts getting hit harder than BTC. Wait for stability.
-      </div>
-      {% else %}
-      <div class="fg-advice fg-advice-caution">
-        <i class="bi bi-dash-circle me-1"></i>
-        <strong>Market neutral.</strong> No strong rotation happening. Trade setups on merit only.
-      </div>
-      {% endif %}
-    {% endif %}
-
-    {% endif %}
-
   </div>
 </div>
 {% endif %}
