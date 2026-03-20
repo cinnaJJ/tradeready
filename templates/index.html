@@ -31,8 +31,8 @@
       {% include 'partials/market_context.html' %}
     </div>
     <div class="col-lg-4">
-      <div class="card h-100">
-        <div class="card-body p-4">
+      <div class="card h-100" style="display:flex;flex-direction:column">
+        <div class="card-body p-4" style="flex:1;display:flex;flex-direction:column">
           <div class="section-label mb-3">📡 Market Snapshot</div>
           {% if not loading and coins_summary %}
           <div class="row g-3 text-center">
