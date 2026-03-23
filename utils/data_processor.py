@@ -1,11 +1,23 @@
 """
-utils/data_processor.py — Data formatting + Trading Signal Engine
-Uses real RSI from Binance where available, falls back to sparkline RSI.
+utils/data_processor.py — Trading Signal Engine v2
+Improvements:
+- EMA 200 position check
+- BTC condition filter (caps score if BTC bearish)
+- Minimum 3 confluence rule for Buy Watch
+- Pump filter (flags 20%+ 7d gains as chasing)
+- Market environment badge
+- Score confidence label
 """
 
 import logging
 logger = logging.getLogger(__name__)
 
+# Stablecoins to always filter out
+STABLECOINS = {
+    "USDT","USDC","BUSD","DAI","TUSD","USDP","GUSD","FRAX",
+    "LUSD","SUSD","USDD","PYUSD","USD1","USDE","USDG","RLUSD",
+    "FDUSD","CUSD","CEUR","USDBC","EURC","EURS"
+}
 
 # ─── FORMATTING ──────────────────────────────────────────────────────────────
 def format_currency(value, decimals: int = 2) -> str:
@@ -19,7 +31,6 @@ def format_currency(value, decimals: int = 2) -> str:
         return f"${v:,.{decimals}f}"
     except: return "N/A"
 
-
 def format_percentage(value, decimals: int = 2) -> str:
     if value is None: return "N/A"
     try:
@@ -27,28 +38,25 @@ def format_percentage(value, decimals: int = 2) -> str:
         return f"{'+' if v >= 0 else ''}{v:.{decimals}f}%"
     except: return "N/A"
 
-
-# ─── RSI FROM SPARKLINE (fallback) ───────────────────────────────────────────
+# ─── RSI FROM SPARKLINE ──────────────────────────────────────────────────────
 def calc_rsi_sparkline(prices: list, period: int = 14) -> float | None:
-    if not prices or len(prices) < period + 1:
-        return None
+    if not prices or len(prices) < period + 1: return None
     try:
-        gains, losses = 0.0, 0.0
+        gains = losses = 0.0
         for i in range(1, period + 1):
-            diff = prices[i] - prices[i - 1]
+            diff = prices[i] - prices[i-1]
             if diff > 0: gains  += diff
             else:        losses -= diff
-        avg_gain = gains  / period
-        avg_loss = losses / period
-        if avg_loss == 0: return 100.0
+        avg_g = gains  / period
+        avg_l = losses / period
+        if avg_l == 0: return 100.0
         for i in range(period + 1, len(prices)):
-            diff = prices[i] - prices[i - 1]
-            avg_gain = (avg_gain * (period-1) + max(diff, 0)) / period
-            avg_loss = (avg_loss * (period-1) + max(-diff, 0)) / period
-        if avg_loss == 0: return 100.0
-        return round(100 - (100 / (1 + avg_gain / avg_loss)), 1)
+            diff  = prices[i] - prices[i-1]
+            avg_g = (avg_g * (period-1) + max(diff, 0))  / period
+            avg_l = (avg_l * (period-1) + max(-diff, 0)) / period
+        if avg_l == 0: return 100.0
+        return round(100 - (100 / (1 + avg_g / avg_l)), 1)
     except: return None
-
 
 # ─── TREND DETECTION ─────────────────────────────────────────────────────────
 def detect_trend(prices: list) -> str:
@@ -63,7 +71,6 @@ def detect_trend(prices: list) -> str:
         return "sideways"
     except: return "unknown"
 
-
 def detect_pullback(prices: list) -> bool:
     if not prices or len(prices) < 10: return False
     try:
@@ -73,47 +80,142 @@ def detect_pullback(prices: list) -> bool:
         return detect_trend(prices) == "uptrend" and 3 <= pct <= 15
     except: return False
 
-
-# ─── TRADING SIGNAL ENGINE ───────────────────────────────────────────────────
-def calculate_trading_signal(coin: dict, rsi_cache: dict = None,
-                               vol_cache: dict = None) -> dict:
+# ─── EMA 200 ESTIMATE FROM SPARKLINE ─────────────────────────────────────────
+def estimate_ema200_position(prices: list, p7d: float) -> str:
     """
-    Score a coin 0-10. Uses real Binance RSI/volume where available.
-    rsi_cache: {SYMBOL: rsi_value} from Binance
-    vol_cache: {SYMBOL: volume_profile} from Binance
+    Estimate if price is above or below EMA 200.
+    Uses 7d trend as proxy — not perfect but directional.
+    Returns: 'above', 'below', 'unknown'
+    """
+    if not prices: 
+        # Use 7d change as proxy
+        if p7d is None: return "unknown"
+        if p7d > 15:    return "above"   # strong uptrend likely above
+        if p7d < -15:   return "below"   # strong downtrend likely below
+        return "unknown"
+    
+    # Use sparkline — if price is well above the early average = likely above EMA 200
+    try:
+        early_avg = sum(prices[:7]) / 7 if len(prices) >= 7 else prices[0]
+        current   = prices[-1]
+        diff_pct  = (current - early_avg) / early_avg * 100
+        if diff_pct > 10:   return "above"
+        if diff_pct < -10:  return "below"
+        return "unknown"
+    except: return "unknown"
+
+# ─── MARKET ENVIRONMENT ───────────────────────────────────────────────────────
+def get_market_environment(btc_data: dict) -> dict:
+    """
+    Determine overall market environment from BTC data.
+    Returns environment dict used to cap scores.
+    """
+    if not btc_data or not btc_data.get("price"):
+        return {"env": "unknown", "label": "UNKNOWN", "color": "neutral",
+                "cap_score": 10, "penalty": 0, "warning": None}
+
+    p24 = btc_data.get("change24", 0) or 0
+    p7d = btc_data.get("change7d", 0)  or 0
+    mood = btc_data.get("mood", "")
+
+    # BTC below all EMAs = bearish environment
+    if mood in ("bearish",) or (p7d < -10 and p24 < -2):
+        return {
+            "env":       "bear",
+            "label":     "BEAR MARKET",
+            "color":     "bearish",
+            "cap_score": 5.0,   # max score capped at 5 in bear market
+            "penalty":   1.5,   # additional penalty to scores
+            "warning":   "BTC in downtrend — all longs carry higher risk. Score capped at 5."
+        }
+    elif mood in ("slightly_bearish",) or p7d < -5:
+        return {
+            "env":       "caution",
+            "label":     "CAUTION",
+            "color":     "caution",
+            "cap_score": 7.0,
+            "penalty":   0.5,
+            "warning":   "BTC showing weakness — be selective, reduce position sizes."
+        }
+    elif mood in ("bullish",) or (p7d > 5 and p24 > 0):
+        return {
+            "env":       "bull",
+            "label":     "BULL MARKET",
+            "color":     "bullish",
+            "cap_score": 10.0,
+            "penalty":   0,
+            "warning":   None
+        }
+    else:
+        return {
+            "env":       "neutral",
+            "label":     "NEUTRAL",
+            "color":     "neutral",
+            "cap_score": 8.0,
+            "penalty":   0,
+            "warning":   None
+        }
+
+# ─── SIGNAL ENGINE v2 ────────────────────────────────────────────────────────
+def calculate_trading_signal(coin: dict, rsi_cache: dict = None,
+                              vol_cache: dict = None,
+                              market_env: dict = None) -> dict:
+    """
+    Score a coin 0-10 with 6 new improvements:
+    1. EMA 200 position estimate
+    2. BTC condition cap
+    3. Min 3 confluences for Buy Watch
+    4. Pump filter
+    5. Market environment badge
+    6. Score confidence label
     """
     score    = 0.0
     signals  = []
     warnings = []
+    confidence_points = 0  # how many real data points we have
 
     p24  = coin.get("price_change_percentage_24h") or 0
     p7d  = coin.get("price_change_percentage_7d_in_currency") or 0
+    p1h  = coin.get("price_change_percentage_1h_in_currency") or 0
     vol  = coin.get("total_volume") or 0
     mcap = coin.get("market_cap") or 0
     sym  = (coin.get("symbol") or "").upper()
 
+    # Skip stablecoins entirely
+    if sym in STABLECOINS:
+        return {
+            "score": 0, "verdict": "STABLECOIN", "verdict_color": "neutral",
+            "verdict_icon": "⚪", "signals": [], "warnings": [],
+            "rsi": None, "rsi_source": "n/a", "trend": "stable",
+            "pullback": False, "vol_spike": False, "confluence": 0,
+            "market_env": "neutral", "market_env_label": "N/A",
+            "market_env_color": "neutral", "ema200_position": "unknown",
+            "confidence": "N/A", "confidence_score": 0,
+            "is_stablecoin": True,
+        }
+
     sparkline = coin.get("sparkline_in_7d", {})
     prices    = sparkline.get("price", []) if isinstance(sparkline, dict) else []
 
-    # ── RSI — use Binance real RSI first, fallback to sparkline ──────────────
+    # ── RSI ──────────────────────────────────────────────────────────────────
     rsi = None
     rsi_source = "estimated"
 
     if rsi_cache and sym in rsi_cache:
         rsi = rsi_cache[sym]
-        rsi_source = "Binance (real)"
+        rsi_source = "real"
+        confidence_points += 3  # real RSI = high confidence
     elif prices:
         rsi = calc_rsi_sparkline(prices)
         rsi_source = "sparkline"
+        confidence_points += 1
 
-    # Final fallback — estimate from price changes
     if rsi is None:
         if p7d < -20:   rsi = 22
         elif p7d < -10: rsi = 33
         elif p7d > 20:  rsi = 78
         elif p7d > 10:  rsi = 65
         else:           rsi = 50
-        rsi_source = "estimated"
 
     coin["rsi_value"]  = rsi
     coin["rsi_source"] = rsi_source
@@ -121,11 +223,11 @@ def calculate_trading_signal(coin: dict, rsi_cache: dict = None,
     if rsi <= 25:
         score += 3.0
         signals.append({"icon": "📉", "label": f"RSI Deeply Oversold ({rsi})", "type": "bullish",
-                         "desc": f"RSI at {rsi} — extreme selling exhaustion ({rsi_source})"})
+                         "desc": f"Extreme selling exhaustion — potential bounce ({rsi_source})"})
     elif rsi <= 30:
         score += 2.5
         signals.append({"icon": "📉", "label": f"RSI Oversold ({rsi})", "type": "bullish",
-                         "desc": f"RSI at {rsi} — sellers exhausted, potential bounce ({rsi_source})"})
+                         "desc": f"Sellers exhausted — watch for reversal ({rsi_source})"})
     elif rsi <= 40:
         score += 1.0
         signals.append({"icon": "📊", "label": f"RSI Low ({rsi})", "type": "neutral",
@@ -133,35 +235,51 @@ def calculate_trading_signal(coin: dict, rsi_cache: dict = None,
     elif rsi >= 75:
         score -= 2.5
         warnings.append({"icon": "⚠️", "label": f"RSI Extremely Overbought ({rsi})", "type": "bearish",
-                          "desc": f"RSI at {rsi} — very high reversal risk ({rsi_source})"})
+                          "desc": f"Very high reversal risk ({rsi_source})"})
     elif rsi >= 70:
         score -= 2.0
         warnings.append({"icon": "⚠️", "label": f"RSI Overbought ({rsi})", "type": "bearish",
-                          "desc": f"RSI at {rsi} — buyers exhausted ({rsi_source})"})
+                          "desc": f"Buyers exhausted ({rsi_source})"})
     elif rsi >= 60:
         score -= 0.5
         warnings.append({"icon": "📊", "label": f"RSI Elevated ({rsi})", "type": "caution",
-                          "desc": f"RSI getting high — be careful chasing ({rsi_source})"})
+                          "desc": "Getting high — careful chasing"})
 
     # ── TREND ────────────────────────────────────────────────────────────────
     trend = detect_trend(prices) if prices else (
         "uptrend" if p7d > 5 else "downtrend" if p7d < -5 else "sideways"
     )
     coin["trend"] = trend
+    if prices: confidence_points += 1
 
     if trend == "uptrend":
         score += 2.0
         signals.append({"icon": "📈", "label": "Uptrend Active", "type": "bullish",
-                         "desc": "Higher Highs + Higher Lows — bullish structure intact"})
+                         "desc": "Higher Highs + Higher Lows — bullish structure"})
     elif trend == "downtrend":
         score -= 2.0
         warnings.append({"icon": "📉", "label": "Downtrend Active", "type": "bearish",
-                          "desc": "Lower Highs + Lower Lows — avoid buying into this"})
+                          "desc": "Lower Highs + Lower Lows — avoid buying"})
     else:
         signals.append({"icon": "↔️", "label": "Sideways / Ranging", "type": "neutral",
                          "desc": "No clear trend — wait for breakout"})
 
-    # ── PULLBACK TO SUPPORT ───────────────────────────────────────────────────
+    # ── EMA 200 POSITION (NEW) ────────────────────────────────────────────────
+    ema200_pos = estimate_ema200_position(prices, p7d)
+    coin["ema200_position"] = ema200_pos
+
+    if ema200_pos == "above":
+        score += 2.0
+        confidence_points += 1
+        signals.append({"icon": "🏔️", "label": "Above EMA 200 (est.)", "type": "bullish",
+                         "desc": "Price likely above the 200 EMA — long-term bullish"})
+    elif ema200_pos == "below":
+        score -= 2.0
+        confidence_points += 1
+        warnings.append({"icon": "⬇️", "label": "Below EMA 200 (est.)", "type": "bearish",
+                          "desc": "Price likely below 200 EMA — long-term bearish, higher risk"})
+
+    # ── PULLBACK ─────────────────────────────────────────────────────────────
     pullback = detect_pullback(prices) if prices else (
         trend == "uptrend" and -15 <= p24 <= -3
     )
@@ -170,107 +288,156 @@ def calculate_trading_signal(coin: dict, rsi_cache: dict = None,
     if pullback:
         score += 2.0
         signals.append({"icon": "🎯", "label": "Pullback to Support", "type": "bullish",
-                         "desc": "Healthy dip in uptrend — potential buy-the-dip setup"})
+                         "desc": "Healthy dip in uptrend — buy-the-dip potential"})
 
-    # ── VOLUME — use Binance real data first ──────────────────────────────────
+    # ── PUMP FILTER (NEW) ─────────────────────────────────────────────────────
+    if p7d > 30:
+        score -= 2.0
+        warnings.append({"icon": "🚨", "label": f"Pump Alert +{p7d:.0f}% in 7d", "type": "bearish",
+                          "desc": "Already up 30%+ this week — high risk of reversal, do NOT chase"})
+    elif p7d > 20:
+        score -= 1.5
+        warnings.append({"icon": "⚠️", "label": f"Extended +{p7d:.0f}% in 7d", "type": "caution",
+                          "desc": "Up 20%+ this week — wait for pullback before entering"})
+    elif p24 > 15:
+        score -= 1.0
+        warnings.append({"icon": "🚀", "label": f"Already up +{p24:.1f}% today", "type": "caution",
+                          "desc": "Big move today — don't chase, wait for consolidation"})
+    elif 3 <= p24 <= 15:
+        score += 0.5
+        signals.append({"icon": "✅", "label": f"Healthy gain +{p24:.1f}%", "type": "bullish",
+                         "desc": "Steady move — not overextended"})
+    elif p24 < -20:
+        warnings.append({"icon": "💥", "label": f"Big drop {p24:.1f}%", "type": "bearish",
+                          "desc": "Steep drop — wait for stabilisation"})
+
+    confidence_points += 2  # price data always available
+
+    # ── VOLUME ───────────────────────────────────────────────────────────────
     vol_spike  = False
-    vol_ratio  = 0
     vol_source = "estimated"
 
     if vol_cache and sym in vol_cache:
-        vp         = vol_cache[sym]
-        vol_spike  = vp.get("spike", False)
-        vol_ratio  = vp.get("ratio", 0)
-        vol_source = f"Binance (real) {vol_ratio}x avg"
+        vp        = vol_cache[sym]
+        vol_spike = vp.get("spike", False)
+        ratio     = vp.get("ratio", 0)
+        vol_source = f"real ({ratio}x avg)"
+        confidence_points += 2
     else:
-        # Fallback — volume vs market cap ratio
         if vol and mcap and mcap > 0:
             vol_spike  = (vol / mcap) > 0.20
-            vol_ratio  = round(vol / mcap, 2)
-            vol_source = "estimated (vol/mcap)"
+            vol_source = "estimated"
+            confidence_points += 1
 
     coin["volume_spike"] = vol_spike
 
     if vol_spike:
         if p24 > 0:
             score += 1.5
-            signals.append({"icon": "🔥", "label": f"Volume Spike Bullish ({vol_source})", "type": "bullish",
-                             "desc": "High volume on up move — real buyers behind this"})
+            signals.append({"icon": "🔥", "label": f"Volume Spike Bullish", "type": "bullish",
+                             "desc": f"High volume on up move — real buyers ({vol_source})"})
         else:
             score -= 1.0
-            warnings.append({"icon": "🔥", "label": f"Volume Spike Bearish ({vol_source})", "type": "bearish",
-                              "desc": "High volume on down move — real selling pressure"})
-
-    # ── 24H MOMENTUM ─────────────────────────────────────────────────────────
-    if p24 > 15:
-        score -= 1.0
-        warnings.append({"icon": "🚀", "label": f"Already pumped +{p24:.1f}% today", "type": "caution",
-                          "desc": "Up too much — don't chase, wait for pullback"})
-    elif p24 > 8:
-        score -= 0.5
-        warnings.append({"icon": "📈", "label": f"Strong day +{p24:.1f}%", "type": "caution",
-                          "desc": "Good move but getting extended — be careful"})
-    elif 3 <= p24 <= 8:
-        score += 0.5
-        signals.append({"icon": "✅", "label": f"Healthy gain +{p24:.1f}%", "type": "bullish",
-                         "desc": "Steady gain — not overextended"})
-    elif p24 < -20:
-        warnings.append({"icon": "💥", "label": f"Big drop {p24:.1f}%", "type": "bearish",
-                          "desc": "Steep drop — wait for stabilisation before considering"})
+            warnings.append({"icon": "🔥", "label": f"Volume Spike Bearish", "type": "bearish",
+                              "desc": f"High volume on down move — real selling ({vol_source})"})
 
     # ── MARKET CAP SAFETY ────────────────────────────────────────────────────
     if mcap < 500_000_000:
         score -= 1.0
         warnings.append({"icon": "⚠️", "label": "Small Cap — Higher Risk", "type": "caution",
-                          "desc": "Under $500M market cap — avoid as beginner"})
+                          "desc": "Under $500M — avoid as beginner"})
     elif mcap > 10_000_000_000:
         score += 0.5
         signals.append({"icon": "🏦", "label": "Large Cap (Safer)", "type": "bullish",
                          "desc": "Large cap — more liquid, cleaner patterns"})
 
-    # ── FINAL SCORE ──────────────────────────────────────────────────────────
-    score = round(max(0.0, min(10.0, score + 3.0)), 1)
+    # ── BTC CONDITION CAP (NEW) ───────────────────────────────────────────────
+    env = market_env or {"env": "unknown", "cap_score": 10, "penalty": 0, "warning": None,
+                          "label": "UNKNOWN", "color": "neutral"}
 
-    if score >= 7.5:
+    # Apply market environment penalty
+    score -= env.get("penalty", 0)
+
+    # Base score
+    raw_score = round(max(0.0, score + 3.0), 1)
+
+    # Cap score based on BTC condition
+    cap = env.get("cap_score", 10)
+    final_score = round(min(raw_score, cap), 1)
+
+    if env.get("warning") and raw_score > cap:
+        warnings.append({"icon": "₿", "label": f"Score capped — {env['label']}",
+                          "type": "bearish", "desc": env["warning"]})
+
+    # ── CONFLUENCE CHECK (NEW) ────────────────────────────────────────────────
+    # Need minimum 3 bullish signals for Buy Watch
+    bullish_count = len([s for s in signals if s["type"] == "bullish"])
+
+    # ── VERDICT ──────────────────────────────────────────────────────────────
+    if final_score >= 7.5 and bullish_count >= 3:
         verdict, color, icon = "STRONG BUY WATCH", "bullish", "🟢"
-    elif score >= 6.0:
+    elif final_score >= 6.0 and bullish_count >= 3:
         verdict, color, icon = "BUY WATCH",         "bullish", "🟡"
-    elif score >= 4.5:
+    elif final_score >= 6.0 and bullish_count < 3:
+        # Has good score but not enough confluence
+        verdict, color, icon = "WATCH — LOW CONFLUENCE", "caution", "🟠"
+        warnings.append({"icon": "🔍", "label": "Low Confluence", "type": "caution",
+                          "desc": f"Only {bullish_count}/3 required bullish signals — wait for more confirmation"})
+    elif final_score >= 4.5:
         verdict, color, icon = "NEUTRAL — WAIT",    "neutral", "🔵"
-    elif score >= 3.0:
+    elif final_score >= 3.0:
         verdict, color, icon = "CAUTION",            "caution", "🟠"
     else:
         verdict, color, icon = "AVOID",              "bearish", "🔴"
 
-    return {
-        "score":         score,
-        "verdict":       verdict,
-        "verdict_color": color,
-        "verdict_icon":  icon,
-        "signals":       signals,
-        "warnings":      warnings,
-        "rsi":           rsi,
-        "rsi_source":    rsi_source,
-        "trend":         trend,
-        "pullback":      pullback,
-        "vol_spike":     vol_spike,
-        "confluence":    len(signals),
-    }
+    # ── CONFIDENCE LABEL (NEW) ───────────────────────────────────────────────
+    max_points = 11
+    conf_pct   = min(100, int(confidence_points / max_points * 100))
+    if conf_pct >= 75:   conf_label = f"High ({conf_pct}%)"
+    elif conf_pct >= 50: conf_label = f"Medium ({conf_pct}%)"
+    else:                conf_label = f"Low ({conf_pct}%) — verify on chart"
 
+    return {
+        "score":             final_score,
+        "raw_score":         raw_score,
+        "verdict":           verdict,
+        "verdict_color":     color,
+        "verdict_icon":      icon,
+        "signals":           signals,
+        "warnings":          warnings,
+        "rsi":               rsi,
+        "rsi_source":        rsi_source,
+        "trend":             trend,
+        "pullback":          pullback,
+        "vol_spike":         vol_spike,
+        "confluence":        bullish_count,
+        "ema200_position":   ema200_pos,
+        "market_env":        env["env"],
+        "market_env_label":  env["label"],
+        "market_env_color":  env["color"],
+        "confidence":        conf_label,
+        "confidence_score":  conf_pct,
+        "is_stablecoin":     False,
+    }
 
 # ─── PROCESS MARKET DATA ─────────────────────────────────────────────────────
 def process_market_data(raw_coins: list, rsi_cache: dict = None,
-                         vol_cache: dict = None) -> list:
-    processed = []
+                         vol_cache: dict = None, btc_data: dict = None) -> list:
+    market_env = get_market_environment(btc_data or {})
+    processed  = []
+
     for i, coin in enumerate(raw_coins):
         try:
+            sym = (coin.get("symbol") or "").upper()
+            if sym in STABLECOINS:
+                continue  # skip stablecoins entirely
+
             p24 = coin.get("price_change_percentage_24h")
             p7d = coin.get("price_change_percentage_7d_in_currency")
             vol = coin.get("total_volume")
             mc  = coin.get("market_cap")
 
-            signal = calculate_trading_signal(coin, rsi_cache, vol_cache)
-
+            signal   = calculate_trading_signal(coin, rsi_cache, vol_cache, market_env)
             sparkline = coin.get("sparkline_in_7d", {})
 
             processed.append({
@@ -296,6 +463,12 @@ def process_market_data(raw_coins: list, rsi_cache: dict = None,
                 "signal_pullback":    signal["pullback"],
                 "signal_vol_spike":   signal["vol_spike"],
                 "signal_confluence":  signal["confluence"],
+                "signal_ema200":      signal["ema200_position"],
+                "signal_market_env":  signal["market_env"],
+                "signal_env_label":   signal["market_env_label"],
+                "signal_env_color":   signal["market_env_color"],
+                "signal_confidence":  signal["confidence"],
+                "signal_conf_score":  signal["confidence_score"],
                 "trend_signal":       signal["verdict_color"],
             })
         except Exception as e:
@@ -313,9 +486,11 @@ def filter_coins(coins: list, min_price=None, max_price=None,
     if max_change is not None: f = [c for c in f if (c.get("price_change_percentage_24h") or 0) <= max_change]
     if sort_by:
         reverse = not sort_by.endswith("_asc")
-        key_map = {"price": "current_price", "volume": "total_volume",
-                   "market_cap": "market_cap", "change": "price_change_percentage_24h",
-                   "score": "signal_score"}
+        key_map = {
+            "price": "current_price", "volume": "total_volume",
+            "market_cap": "market_cap", "change": "price_change_percentage_24h",
+            "score": "signal_score"
+        }
         key = key_map.get(sort_by.replace("_asc","").replace("_desc",""), "market_cap")
         f   = sorted(f, key=lambda x: x.get(key) or 0, reverse=reverse)
     return f
