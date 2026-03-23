@@ -71,6 +71,17 @@
     </div>
   </div>
 
+  <!-- MARKET ENVIRONMENT BANNER -->
+  {% if market_env %}
+  <div class="market-env-banner {{ market_env.env }}">
+    {% if market_env.env == 'bear' %}🐻 <strong>BEAR MARKET DETECTED:</strong> BTC in downtrend — all scores capped at 5/10. Only the highest quality setups. Consider reducing trade size.
+    {% elif market_env.env == 'caution' %}⚠️ <strong>CAUTION:</strong> BTC showing weakness — be selective, smaller position sizes, tighter stops.
+    {% elif market_env.env == 'bull' %}🐂 <strong>BULL MARKET:</strong> BTC uptrend active — good environment for trading. Still use your checklist.
+    {% else %}↔️ <strong>NEUTRAL MARKET:</strong> No strong direction. Only A+ setups — minimum 3 confluences required.
+    {% endif %}
+  </div>
+  {% endif %}
+
   <!-- STRONG BUY WATCH -->
   {% if strong_buys %}
   <div class="d-flex align-items-center justify-content-between mb-3">
