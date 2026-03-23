@@ -3,8 +3,8 @@
 <a href="{{ tv_url }}" target="_blank" rel="noopener" class="coin-card-link text-decoration-none">
   <div class="signal-card h-100 signal-{{ coin.signal_color }}">
 
-    <!-- HEADER -->
-    <div class="d-flex align-items-center gap-2 mb-3">
+    <!-- HEADER: logo + name + score -->
+    <div class="d-flex align-items-center gap-2 mb-2">
       {% if coin.image or coin.thumb %}
       <img src="{{ coin.image or coin.thumb }}" alt="{{ coin.name }}" class="coin-logo" loading="lazy"/>
       {% else %}
@@ -19,6 +19,29 @@
       </div>
     </div>
 
+    <!-- MARKET ENVIRONMENT BADGE (NEW) -->
+    <div class="d-flex gap-2 flex-wrap mb-2">
+      <span class="env-badge env-{{ coin.signal_env_color }}">
+        {% if coin.signal_market_env == 'bull' %}🐂
+        {% elif coin.signal_market_env == 'bear' %}🐻
+        {% elif coin.signal_market_env == 'caution' %}⚠️
+        {% else %}↔️{% endif %}
+        {{ coin.signal_env_label }}
+      </span>
+
+      <!-- EMA 200 BADGE (NEW) -->
+      {% if coin.signal_ema200 == 'above' %}
+      <span class="env-badge env-bullish">📈 Above EMA200</span>
+      {% elif coin.signal_ema200 == 'below' %}
+      <span class="env-badge env-bearish">📉 Below EMA200</span>
+      {% endif %}
+
+      <!-- CONFLUENCE COUNT (NEW) -->
+      <span class="env-badge {% if coin.signal_confluence >= 3 %}env-bullish{% else %}env-caution{% endif %}">
+        🔀 {{ coin.signal_confluence }}/3 signals
+      </span>
+    </div>
+
     <!-- PRICE + CHANGE -->
     <div class="d-flex align-items-baseline gap-3 mb-2">
       <div class="coin-price" data-price-id="{{ coin.id }}">
@@ -28,16 +51,23 @@
       <div class="coin-change {{ 'positive' if (change or 0) >= 0 else 'negative' }}"
            data-change-id="{{ coin.id }}">
         {{ format_percentage(change) }}
+        <span style="font-size:0.6rem;color:var(--muted)"> 24h</span>
       </div>
+      {% if coin.price_change_percentage_7d_in_currency %}
+      <div class="coin-change {{ 'positive' if (coin.price_change_percentage_7d_in_currency or 0) >= 0 else 'negative' }}" style="font-size:0.72rem">
+        {{ format_percentage(coin.price_change_percentage_7d_in_currency) }}
+        <span style="font-size:0.6rem;color:var(--muted)"> 7d</span>
+      </div>
+      {% endif %}
     </div>
 
     <!-- VERDICT -->
-    <div class="verdict-badge verdict-{{ coin.signal_color }} mb-3">
+    <div class="verdict-badge verdict-{{ coin.signal_color }} mb-2">
       {{ coin.signal_verdict }}
     </div>
 
     <!-- SIGNAL TAGS -->
-    <div class="signal-tags mb-3">
+    <div class="signal-tags mb-2">
       {% for sig in coin.signal_details[:3] %}
       <span class="signal-tag bullish">{{ sig.icon }} {{ sig.label }}</span>
       {% endfor %}
@@ -46,8 +76,8 @@
       {% endfor %}
     </div>
 
-    <!-- KEY STATS GRID -->
-    <div class="signal-stats-grid">
+    <!-- STATS GRID -->
+    <div class="signal-stats-grid mb-2">
       <div class="signal-stat">
         <span class="signal-stat-label">RSI</span>
         <span class="signal-stat-value
@@ -55,13 +85,13 @@
           {% elif coin.signal_rsi and coin.signal_rsi >= 70 %}negative
           {% else %}accent{% endif %}">
           {{ coin.signal_rsi or 'N/A' }}
-          {% if coin.signal_rsi_source == 'Binance (real)' %}
-          <span style="font-size:0.55rem;color:var(--green)">✓</span>
+          {% if coin.signal_rsi_source == 'real' %}
+          <span style="font-size:0.5rem;color:var(--green)">✓REAL</span>
           {% endif %}
         </span>
       </div>
       <div class="signal-stat">
-        <span class="signal-stat-label">7d</span>
+        <span class="signal-stat-label">7d Change</span>
         <span class="signal-stat-value {{ 'positive' if (coin.price_change_percentage_7d_in_currency or 0) >= 0 else 'negative' }}">
           {{ format_percentage(coin.price_change_percentage_7d_in_currency) }}
         </span>
@@ -76,8 +106,19 @@
       </div>
     </div>
 
-    <div style="font-size:0.58rem;color:var(--muted);margin-top:10px">
-      <i class="bi bi-graph-up me-1"></i>Opens TradingView
+    <!-- CONFIDENCE LABEL (NEW) -->
+    <div class="confidence-row">
+      <span class="confidence-label">Signal confidence:</span>
+      <span class="confidence-value
+        {% if coin.signal_conf_score >= 75 %}positive
+        {% elif coin.signal_conf_score >= 50 %}text-warning
+        {% else %}negative{% endif %}">
+        {{ coin.signal_confidence }}
+      </span>
+    </div>
+
+    <div style="font-size:0.55rem;color:var(--muted);margin-top:6px">
+      <i class="bi bi-graph-up me-1"></i>Opens TradingView — always verify before trading
     </div>
   </div>
 </a>
