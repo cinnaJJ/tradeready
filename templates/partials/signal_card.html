@@ -117,7 +117,52 @@
       </span>
     </div>
 
-    <div style="font-size:0.55rem;color:var(--muted);margin-top:6px">
+    <!-- QUANT DATA -->
+    {% if coin.quant and coin.quant.status == 'ok' %}
+    <hr style="border-color:var(--border);margin:8px 0"/>
+    <div class="quant-mini-row">
+      <span class="quant-label">⚗ Quant</span>
+      <span class="quant-signal quant-{{ coin.quant_color }}">{{ coin.quant_signal }}</span>
+      <span class="quant-score">{{ coin.quant_score }}/5</span>
+    </div>
+    <div class="d-flex flex-wrap gap-1 mt-1">
+      {% set q = coin.quant %}
+
+      {% if q.volatility and q.volatility.is_squeeze %}
+      <span class="quant-tag squeeze">🔲 Volatility Squeeze</span>
+      {% elif q.volatility and q.volatility.is_expansion %}
+      <span class="quant-tag expansion">💥 Vol Expanding</span>
+      {% endif %}
+
+      {% if q.mean_rev and q.mean_rev.status == 'ok' %}
+        {% if q.mean_rev.z_score <= -1.5 %}
+        <span class="quant-tag bullish-q">📊 Mean Rev ↑ (z={{ q.mean_rev.z_score }})</span>
+        {% elif q.mean_rev.z_score >= 1.5 %}
+        <span class="quant-tag bearish-q">📊 Mean Rev ↓ (z={{ q.mean_rev.z_score }})</span>
+        {% endif %}
+      {% endif %}
+
+      {% if q.patterns and q.patterns.primary %}
+      <span class="quant-tag {{ 'bullish-q' if q.patterns.primary.type == 'bullish' else 'bearish-q' if q.patterns.primary.type == 'bearish' else 'neutral-q' }}">
+        {{ q.patterns.primary.icon }} {{ q.patterns.primary.name }}
+      </span>
+      {% endif %}
+
+      {% if q.probability and q.probability.status == 'ok' %}
+      <span class="quant-tag {{ 'bullish-q' if q.probability.prob_up >= 60 else 'bearish-q' if q.probability.prob_up <= 40 else 'neutral-q' }}">
+        🎯 {{ q.probability.prob_up }}% prob up
+      </span>
+      {% endif %}
+
+      {% if q.correlation and q.correlation.status == 'ok' %}
+        {% if q.correlation.lead_lag == 'leads_btc' %}
+        <span class="quant-tag neutral-q">⚡ Leads BTC</span>
+        {% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="font-size:0.55rem;color:var(--muted);margin-top:8px">
       <i class="bi bi-graph-up me-1"></i>Opens TradingView — always verify before trading
     </div>
   </div>
