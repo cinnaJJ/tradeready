@@ -920,3 +920,44 @@ body {
   border: 1px solid rgba(13,255,140,0.3);
   color: var(--green);
 }
+
+/* ── QUANT ENGINE STYLES ─────────────────────────── */
+.quant-mini-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.62rem;
+  font-family: 'DM Mono', monospace;
+}
+
+.quant-label { color: var(--muted); }
+
+.quant-signal {
+  font-weight: 700;
+  font-size: 0.62rem;
+}
+
+.quant-signal.quant-bullish { color: var(--green); }
+.quant-signal.quant-bearish { color: var(--red); }
+.quant-signal.quant-caution { color: var(--yellow); }
+.quant-signal.quant-neutral { color: var(--muted); }
+
+.quant-score {
+  color: var(--accent);
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.quant-tag {
+  font-size: 0.55rem;
+  font-family: 'DM Mono', monospace;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.quant-tag.bullish-q { background: rgba(13,255,140,0.08); color: var(--green); border: 1px solid rgba(13,255,140,0.2); }
+.quant-tag.bearish-q { background: rgba(255,58,92,0.08);  color: var(--red);   border: 1px solid rgba(255,58,92,0.2);  }
+.quant-tag.neutral-q { background: rgba(59,139,255,0.08); color: var(--accent);border: 1px solid rgba(59,139,255,0.2); }
+.quant-tag.squeeze   { background: rgba(255,200,50,0.08); color: var(--yellow);border: 1px solid rgba(255,200,50,0.2); }
+.quant-tag.expansion { background: rgba(255,122,48,0.08); color: var(--orange);border: 1px solid rgba(255,122,48,0.2); }
