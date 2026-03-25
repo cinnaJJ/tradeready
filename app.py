@@ -12,6 +12,7 @@ from utils.data_processor import (
     get_market_environment
 )
 from utils.binance_rsi import fetch_rsi_batch, fetch_volume_batch
+from utils.quant_engine import run_quant_batch, fetch_btc_ohlcv
 import threading
 import time
 import os
@@ -110,6 +111,23 @@ def refresh_all():
     except Exception as e:
         logger.warning(f"Binance RSI/Volume failed: {e}")
 
+    time.sleep(2)
+
+    # Quant analysis — top 30 coins
+    try:
+        mk = cache.get("markets") or []
+        if mk:
+            symbols    = [(c.get("symbol") or "").upper() for c in mk[:30]]
+            symbols    = [s for s in symbols if s]
+            rsi_cache  = cache.get("rsi_cache") or {}
+            btc_candles = fetch_btc_ohlcv(60)
+            quant_data  = run_quant_batch(symbols, btc_candles, rsi_cache)
+            if quant_data:
+                cache.set("quant_cache", quant_data)
+                logger.info(f"Quant analysis: {len(quant_data)} coins")
+    except Exception as e:
+        logger.warning(f"Quant failed: {e}")
+
     logger.info("Fetch cycle complete.")
 
 
@@ -155,12 +173,29 @@ def inject_globals():
 
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
 def get_processed_coins():
-    """Get market data with real RSI, volume and BTC condition injected."""
-    markets   = cache.get("markets") or []
-    rsi_cache = cache.get("rsi_cache") or {}
-    vol_cache = cache.get("vol_cache") or {}
-    btc_data  = cache.get("btc_data") or {}
-    return process_market_data(markets, rsi_cache, vol_cache, btc_data)
+    """Get market data with real RSI, volume, BTC condition and quant data injected."""
+    markets    = cache.get("markets") or []
+    rsi_cache  = cache.get("rsi_cache") or {}
+    vol_cache  = cache.get("vol_cache") or {}
+    btc_data   = cache.get("btc_data") or {}
+    quant_cache = cache.get("quant_cache") or {}
+    processed  = process_market_data(markets, rsi_cache, vol_cache, btc_data)
+
+    # Inject quant data into each coin
+    for coin in processed:
+        sym  = (coin.get("symbol") or "").upper()
+        quant = quant_cache.get(sym)
+        if quant:
+            coin["quant"] = quant
+            coin["quant_score"]  = quant.get("quant_score", 0)
+            coin["quant_signal"] = quant.get("quant_signal", "")
+            coin["quant_color"]  = quant.get("quant_color", "neutral")
+        else:
+            coin["quant"] = None
+            coin["quant_score"]  = 0
+            coin["quant_signal"] = ""
+            coin["quant_color"]  = "neutral"
+    return processed
 
 # ─── ROUTES ──────────────────────────────────────────────────────────────────
 @app.route("/")
